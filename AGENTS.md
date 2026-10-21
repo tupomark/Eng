@@ -1,0 +1,15 @@
+# LEXIS engineering rules
+
+- Read `docs/architecture.md`, `docs/product.md` and `docs/implementation-plan.md` before changing a feature. Preserve the graphite/espresso, sand/bronze, matte-glass direction in `docs/design-system.md`; reference fidelity is provisional until original references are supplied.
+- Build one complete, verifiable learning flow at a time. Do not add placeholder controls that imply working integrations.
+- Use strict TypeScript. Keep pure learning rules in `src/domain`, use cases in `src/application`, provider/storage implementations in `src/infrastructure`, reusable UI in `src/components`, and routes in `src/app`. Domain code must not depend on React, Next.js or storage SDKs.
+- Knowledge belongs to a user + meaning + skill, never to a word alone. Saving a meaning is not evidence of mastery. Keep evidence, scheduling and estimates distinct. Never increase speaking or writing estimates from a recognition exercise.
+- AI/voice/dictionary integrations must implement provider-neutral ports. Explain estimates, record provenance and version, and allow disputed evidence to be excluded/replayed. Never claim an integration works without a real connection and verification.
+- Browser storage is a local single-device mode, not authentication or cloud backup. Handle invalid persisted state, storage denial and write failure visibly. Do not store raw audio or private imported books by default.
+- Preserve unreadable persisted bytes and block writes until recovery or an explicitly confirmed reset. Validate the source/skill relationship and canonical replay order, including equal timestamps. Tab stale-state guards are best effort, not database transactions.
+- Keep secrets server-side. Do not put secret/service-role keys in `NEXT_PUBLIC_*`. Treat database RLS as mandatory; test ownership isolation and cross-user foreign keys. Do not run remote migrations or publish externally without user authorization.
+- Use versioned, checked-in SQL migrations. Make learning writes atomic and retry-safe before introducing remote persistence. Keep backups, retention and deletion behavior explicit.
+- Mobile first, including iPhone safe areas and Safari. Use semantic controls, accessible names, visible keyboard focus, dialog focus management, sufficient contrast and `prefers-reduced-motion`. Avoid animated blur, large backdrop-filter layers and unnecessary WebGL.
+- Use deterministic domain tests for scheduling and evidence; database tests for constraints and access control; Playwright for the first full learning journey, persistence and mobile layouts. Run typecheck, relevant tests and production build before handoff. Record checks that could not be run.
+- Pin dependency versions and commit the lockfile. Use actual documented APIs. Keep external adapters optional and disabled until configured.
+- Changes should be small and independently reviewable. Do not rewrite unrelated work or change the agreed visual direction silently. Document working features, prototypes and outstanding production gates separately.
