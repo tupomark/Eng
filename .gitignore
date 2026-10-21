@@ -8,4 +8,5 @@ playwright-report/
 test-results/
 .DS_Store
 .supabase/
+supabase/.temp/
 .cache/
