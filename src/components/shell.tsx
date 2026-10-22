@@ -141,8 +141,6 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (open) {
-      setQuery("");
-      setSelected(null);
       searchRef.current?.focus();
     }
   }, [open]);

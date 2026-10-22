@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   poweredByHeader: false,
+  // Use the TS 6 compiler API; strict build checks remain enabled.
+  experimental: { useTypeScriptCli: false },
   async headers() {
     return [
       {
