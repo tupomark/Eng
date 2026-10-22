@@ -5,10 +5,31 @@ import type {
   Skill,
 } from "../domain";
 
-/** One atomic state write for the single-device adapter. Remote writes require server transactions. */
+/**
+ * Legacy async facade for the single-device snapshot format. This is not a
+ * remote command contract: server writes will require authenticated commands
+ * and transactions rather than replacement of a complete LearningState.
+ */
 export interface LearningRepository {
   load(): Promise<LearningState>;
   save(state: LearningState): Promise<void>;
+}
+
+export interface LearningSnapshot {
+  readonly state: LearningState;
+  /** Exact stored bytes, including null for an absent record. */
+  readonly serialized: string | null;
+}
+
+/**
+ * Synchronous local snapshot persistence. commit must throw on a failed write
+ * or stale expected bytes and return the new bytes only after storage succeeds.
+ * The browser adapter's stale snapshot check is best effort across tabs, not a
+ * database transaction or an atomic compare-and-swap primitive.
+ */
+export interface SnapshotLearningRepository {
+  read(): LearningSnapshot;
+  commit(state: LearningState, expectedSerialized: string | null): string;
 }
 
 export interface DictionaryProvider {

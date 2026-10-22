@@ -27,9 +27,17 @@ export interface Sense {
   collocations: string[];
 }
 
+export interface DictionaryProvenance {
+  readonly provider: string;
+  readonly version: string;
+  readonly rights: string;
+  readonly kind: "editorial";
+}
+
 export interface DictionaryEntry {
   lexeme: Lexeme;
   senses: Sense[];
+  provenance: DictionaryProvenance;
 }
 
 export interface SavedSense {

@@ -1,8 +1,16 @@
-import type { DictionaryEntry } from "../../domain";
+import type { DictionaryEntry, DictionaryProvenance } from "../../domain";
+
+export const EDITORIAL_PROVENANCE: DictionaryProvenance = Object.freeze({
+  provider: "LEXIS editorial sample",
+  version: "editorial-v1",
+  rights: "Original definitions and examples authored for LEXIS sample",
+  kind: "editorial",
+});
 
 /** Original editorial examples for the initial reading passage; no licensed dictionary API is connected. */
 export const seedEntries: DictionaryEntry[] = [
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-linger",
       lemma: "linger",
@@ -39,6 +47,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-stillness",
       lemma: "stillness",
@@ -62,6 +71,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-deliberate",
       lemma: "deliberate",
@@ -85,6 +95,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-glimpse",
       lemma: "glimpse",
@@ -107,6 +118,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-beneath",
       lemma: "beneath",
@@ -129,6 +141,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-wander",
       lemma: "wander",
@@ -151,6 +164,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-trace",
       lemma: "trace",
@@ -181,6 +195,7 @@ export const seedEntries: DictionaryEntry[] = [
     ],
   },
   {
+    provenance: EDITORIAL_PROVENANCE,
     lexeme: {
       id: "lex-quiet",
       lemma: "quiet",

@@ -58,6 +58,23 @@ export function saveSense(
   };
 }
 
+/** Undo an association only while doing so cannot erase learning history. */
+export function removeSavedSense(
+  state: LearningState,
+  senseId: string,
+): LearningState {
+  identifier(senseId, "Sense ID");
+  if (state.evidence.some((event) => event.senseId === senseId))
+    throw new Error(
+      "This meaning has practice evidence and cannot be unsaved. Disputed observations must also remain in your history.",
+    );
+  if (!state.saved.some((saved) => saved.senseId === senseId)) return state;
+  return {
+    ...state,
+    saved: state.saved.filter((saved) => saved.senseId !== senseId),
+  };
+}
+
 export function reviewSense(
   state: LearningState,
   senseId: string,
