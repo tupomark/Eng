@@ -1,0 +1,1 @@
+LEXIS lightweight Codex handoff. Start with CODEX_FIRST_MESSAGE.md, then LEXIS_COMPLETE_CODEX_BRIEF.md. Five curated WebP visual references are in assets/. This is a compressed subset, not an approved final pixel-perfect UI.
