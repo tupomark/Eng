@@ -9,7 +9,8 @@
 Требуется Node.js 22.18+ (проверено на 24.19) и npm. Внешние сервисы и `.env` для этого этапа не нужны.
 
 ```sh
-cd /workspace/lexis
+git clone https://github.com/tupomark/Eng.git
+cd Eng
 npm ci
 npm run dev
 ```
@@ -34,7 +35,9 @@ npm run dev
 
 UI не обращается к Supabase: миграция подготовлена и проверяется отдельно. Auth, удалённый repository, серверная транзакция и projector — обязательный следующий срез перед многопользовательским пилотом. AI, лицензированный словарь, TTS/STT, микрофон и Vercel не подключены. Voice Assistant — обозначенный визуальный прототип без записи звука; Permissions-Policy запрещает microphone/camera.
 
-Git remote `origin` указывает на предоставленный владельцем [tupomark/Eng](https://github.com/tupomark/Eng). Репозиторий публичный; владелец явно разрешил публикацию исходников и документации 22 октября. Повторный push выполнен, но GitHub вернул HTTP 403; запись через API также отклонена с `Resource not accessible by integration`. Metadata подтверждают права пользователя, но не доступ подключённой интеграции к записи кода. Код ещё не отправлен, удалённый CI не запускался; требуется подключение с доступом к `Eng` и правами записи Contents/Workflows.
+Исходники и история опубликованы с согласия владельца в публичном [tupomark/Eng](https://github.com/tupomark/Eng), ветка `main`. После установки ChatGPT Codex Connector обычный push прошёл; удалённый SHA проверен. Workflow [LEXIS checks](https://github.com/tupomark/Eng/actions) запускает lint, typecheck, unit/database tests, production build и Playwright Chromium/WebKit. Публикация исходников не является deployment приложения; Vercel и внешние учебные сервисы пока не подключены.
+
+Первый [удалённый CI run](https://github.com/tupomark/Eng/actions/runs/39846824037) успешно прошёл 22 октября: 64/64 unit/database tests, 30/30 e2e, lint, typecheck и production build. Source SHA и границы проверки записаны в [PROGRESS](docs/PROGRESS.md).
 
 Оценки выводятся из самоотчётов пользователя. Они не измеряют реальное владение языком, а текущий планировщик не является FSRS. Сохранение слова не увеличивает оценки; recognition не повышает writing/speaking.
 

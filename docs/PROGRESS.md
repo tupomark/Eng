@@ -111,3 +111,15 @@ GitHub-доступ проверен: аутентификация как `tupom
 Код не загружен; GitHub Actions не запускался. Для следующей попытки нужно подключение GitHub с доступом к `Eng`, правами Contents: read/write и Workflows: read/write для `.github/workflows/ci.yml`; секреты не следует передавать в чат. После исправления доступа следует проверить refs, выполнить обычный push без force и проверить Actions.
 
 Изменены только README и этот журнал. Форматирование этих файлов и `git diff --check` прошли; проверки приложения повторно не запускались. Дополнительный read-only review CI не выявил очевидных блокирующих проблем. Переносимые bundle/ZIP обновлены из локального HEAD и доступны до устранения GitHub-доступа.
+
+## 22 октября 2026 — исходники опубликованы в GitHub
+
+После установки ChatGPT Codex Connector владельцем выполнена повторная проверка: `git ls-remote origin` подтвердил пустой репозиторий. Обычный `git push -u origin main` успешно создал удалённую ветку `main` и настроил tracking; force не использовался. Повторное чтение `refs/heads/main` подтвердило SHA `dea5a6d6da2b8098b929ee44c60cf5b010c3a2c1`, совпадающий с опубликованным локальным HEAD. Код и история доступны в публичном [tupomark/Eng](https://github.com/tupomark/Eng). Предыдущий integration blocker закрыт; согласие владельца сохранено.
+
+GitHub Actions автоматически запустил [LEXIS checks #39846824037](https://github.com/tupomark/Eng/actions/runs/39846824037) на этом SHA. Финальный результат — **success**, job `verify` завершён за 2 минуты 45 секунд. По шагам и логу подтверждены `npm ci`, lint, strict typecheck, **64/64 unit/database tests**, production build, установка браузеров и **30/30 Playwright tests** (Chromium/WebKit, 1,3 минуты). Это отдельный выполненный удалённый прогон, а не перенос локальных результатов.
+
+Runner сообщил неблокирующие предупреждения: checkout/setup-node v4 объявляют Node 20 и автоматически исполняются на Node 24; `ubuntu-latest` переходит на Ubuntu 26. Обновление major-версий Actions остаётся небольшим tooling follow-up; текущий run успешен. Физический iPhone Safari по-прежнему не проверен.
+
+Обновлены README (реальный clone URL и статус публикации), эта запись и C01 в requirements traceability. Исходники приложения не менялись. Публикация репозитория не является Vercel deployment, подключением Supabase/Auth или AI/voice. Предыдущие локальные проверки не выдаются за новый запуск.
+
+Финальные изменения документации проверены Prettier и `git diff --check`; они публикуются отдельным docs-only коммитом с `[skip ci]`. Проверенный CI относится к указанному выше source SHA; код приложения после него не менялся. Bundle/ZIP обновлены из заключительного локального HEAD.
