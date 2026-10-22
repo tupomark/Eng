@@ -7,8 +7,8 @@ import { Orb } from "./orb";
 import { useLearning } from "./learning-provider";
 
 export function Home() {
-  const { state, ready } = useLearning();
-  const due = dueSenses(state, new Date()).length;
+  const { state, ready, now } = useLearning();
+  const due = dueSenses(state, now).length;
   const reviews = state.evidence.filter((item) => !item.disputedAt).length;
   const section = Math.min(3, Math.round(state.readerProgress / (100 / 3)) + 1);
   return (

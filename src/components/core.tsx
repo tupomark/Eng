@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Download, Info, RotateCcw, Check } from "lucide-react";
-import { SKILLS, deriveProgress, SCHEDULER_VERSION } from "@/domain";
+import { SKILLS, deriveProgress, dueSenses, SCHEDULER_VERSION } from "@/domain";
 import { seedEntries } from "@/infrastructure/dictionary/seed";
 import { STORAGE_KEY } from "@/infrastructure/storage/browser-repository";
 import { Shell } from "./shell";
@@ -18,7 +18,7 @@ const labels = {
   speaking: "Speaking",
 };
 export function Core() {
-  const { state, dispute, reset, ready } = useLearning();
+  const { state, dispute, reset, ready, now } = useLearning();
   const [resetOpen, setResetOpen] = useState(false);
   const [exportError, setExportError] = useState("");
   const progress = deriveProgress(state);
@@ -73,6 +73,9 @@ export function Core() {
             Add an encounter
             <ArrowUpRight size={14} />
           </Link>
+          <p className="muted" aria-label="Review due count">
+            {dueSenses(state, now).length} meanings due for review
+          </p>
         </div>
       </section>
       <section className="skills-panel">

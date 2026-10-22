@@ -15,19 +15,28 @@ import { useLearning } from "./learning-provider";
 export function Library() {
   const { state, ready } = useLearning();
   const [query, setQuery] = useState("");
-  const saved = state.saved.flatMap((item) => {
-    const entry = seedEntries.find((entry) =>
-      entry.senses.some((sense) => sense.id === item.senseId),
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const saved = state.saved
+    .map((item) => {
+      const entry = seedEntries.find((entry) =>
+        entry.senses.some((sense) => sense.id === item.senseId),
+      );
+      const sense = entry?.senses.find((sense) => sense.id === item.senseId);
+      return { ...item, entry, sense };
+    })
+    .filter(({ senseId, context, entry, sense }) =>
+      [
+        senseId,
+        context,
+        entry?.lexeme.lemma,
+        sense?.definition,
+        sense?.translation,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(normalizedQuery),
     );
-    const sense = entry?.senses.find((sense) => sense.id === item.senseId);
-    return entry &&
-      sense &&
-      `${entry.lexeme.lemma} ${sense.definition} ${sense.translation}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
-      ? [{ ...item, entry, sense }]
-      : [];
-  });
   return (
     <Shell title="Library">
       <div className="page-heading">
@@ -75,30 +84,54 @@ export function Library() {
           <p role="status">Opening your collection…</p>
         ) : saved.length ? (
           <div className="meaning-grid">
-            {saved.map(({ sense, entry, context }) => (
-              <article className="meaning-card glass-panel" key={sense.id}>
+            {saved.map(({ senseId, sense, entry, context, savedAt }) => (
+              <article className="meaning-card glass-panel" key={senseId}>
                 <div>
-                  <h3>{entry.lexeme.lemma}</h3>
+                  <h3>{entry?.lexeme.lemma ?? "Unavailable meaning"}</h3>
                   <span className="tiny muted">
-                    {entry.lexeme.ipa} · {entry.lexeme.partOfSpeech}
+                    {entry
+                      ? `${entry.lexeme.ipa} · ${entry.lexeme.partOfSpeech}`
+                      : `Saved ${new Date(savedAt).toLocaleDateString()}`}
                   </span>
                 </div>
-                <p>{sense.definition}</p>
-                <p className="translation" lang="ru">
-                  {sense.translation}
-                </p>
+                {sense ? (
+                  <>
+                    <p>{sense.definition}</p>
+                    <p className="translation" lang="ru">
+                      {sense.translation}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="tiny muted">
+                      Unavailable in this dictionary version
+                    </p>
+                    <p>
+                      Your saved context and practice history are kept. This
+                      meaning has not been replaced with another definition.
+                    </p>
+                    <p className="tiny muted">Meaning reference: {senseId}</p>
+                  </>
+                )}
                 <blockquote>{context}</blockquote>
-                <details>
-                  <summary>Explore this meaning</summary>
-                  <p className="muted">{sense.example}</p>
-                  <div className="collocations">
-                    {sense.collocations.map((item) => (
-                      <span className="pill" key={item}>
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </details>
+                {sense ? (
+                  <details>
+                    <summary>Explore this meaning</summary>
+                    <p className="muted">{sense.example}</p>
+                    <div className="collocations">
+                      {sense.collocations.map((item) => (
+                        <span className="pill" key={item}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </details>
+                ) : (
+                  <Link className="text-link" href="/core">
+                    Open history &amp; data export
+                    <ArrowUpRight size={14} />
+                  </Link>
+                )}
               </article>
             ))}
           </div>
@@ -106,16 +139,16 @@ export function Library() {
           <div className="empty-state glass-panel">
             <Bookmark size={28} strokeWidth={1.3} />
             <h2>
-              {query
+              {normalizedQuery
                 ? "No meanings match yet."
                 : "Your collection begins with curiosity."}
             </h2>
             <p>
-              {query
+              {normalizedQuery
                 ? "Try a different word or definition."
                 : "Open a reading, tap a word and choose the meaning that speaks to its context."}
             </p>
-            {!query && (
+            {!normalizedQuery && (
               <Link className="button primary" href="/reader">
                 Find your first meaning
                 <ArrowRight size={16} />

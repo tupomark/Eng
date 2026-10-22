@@ -6,8 +6,15 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
-import { emptyState, type LearningState, type Rating } from "@/domain";
+import {
+  deriveProgress,
+  emptyState,
+  type LearningState,
+  type Rating,
+} from "@/domain";
+import { createBrowserClock } from "@/infrastructure/storage/browser-clock";
 import { LearningSession } from "@/application/learning-session";
 import {
   BrowserLearningRepository,
@@ -18,6 +25,7 @@ interface LearningContextValue {
   state: LearningState;
   ready: boolean;
   error: string | null;
+  now: string;
   save: (senseId: string, context: string) => boolean;
   undoSave: (senseId: string) => boolean;
   canUndoSave: (senseId: string) => boolean;
@@ -37,6 +45,23 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<LearningState>(emptyState);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clock] = useState(createBrowserClock);
+  const timestamp = useSyncExternalStore(
+    clock.subscribe,
+    clock.getSnapshot,
+    clock.getServerSnapshot,
+  );
+  const now = new Date(timestamp).toISOString();
+  const deadline = Math.min(
+    ...deriveProgress(state).flatMap((item) =>
+      item.dueAt && Date.parse(item.dueAt) > timestamp
+        ? [Date.parse(item.dueAt)]
+        : [],
+    ),
+  );
+  useEffect(() => {
+    clock.setDeadline(Number.isFinite(deadline) ? deadline : null);
+  }, [clock, deadline]);
   const session = useRef<LearningSession | null>(null);
   const undoableSaves = useRef(new Set<string>());
   useEffect(() => {
@@ -104,6 +129,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         state,
         ready,
         error,
+        now,
         save: (id, context) => {
           const alreadySaved = session.current?.state?.saved.some(
             (saved) => saved.senseId === id,

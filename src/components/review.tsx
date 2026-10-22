@@ -19,18 +19,10 @@ const availableSenseIds = new Set(
 );
 
 export function Review() {
-  const { state, ready, review } = useLearning();
+  const { state, ready, review, now } = useLearning();
   const [revealedSense, setRevealedSense] = useState<string | null>(null);
-  const [now, setNow] = useState(() => new Date().toISOString());
   const [reviewed, setReviewed] = useState(0);
   const ratingInFlight = useRef(false);
-  useEffect(() => {
-    const timer = window.setInterval(
-      () => setNow(new Date().toISOString()),
-      30_000,
-    );
-    return () => window.clearInterval(timer);
-  }, []);
 
   const allDue = dueSenses(state, now);
   const due = allDue.filter((saved) => availableSenseIds.has(saved.senseId));
@@ -66,7 +58,6 @@ export function Review() {
     if (review(sense.id, rating)) {
       setReviewed((value) => value + 1);
       setRevealedSense(null);
-      setNow(new Date().toISOString());
     } else ratingInFlight.current = false;
   }
 
