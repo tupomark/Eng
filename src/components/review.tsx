@@ -174,7 +174,7 @@ export function Review() {
           >
             <div className="review-card-top">
               <span className="pill">
-                <RotateCcw size={13} /> Recognition
+                <RotateCcw size={13} /> Recognition · Self-check
               </span>
               <span className="muted">
                 {due.length} {due.length === 1 ? "meaning" : "meanings"} due
@@ -190,7 +190,8 @@ export function Review() {
                 “{current.context.trim() || sense.example}”
               </blockquote>
               <p className="muted">
-                Do you recognise the meaning you saved in this context?
+                Take a moment to recognise the meaning you saved in this
+                sentence, then reveal it to check.
               </p>
             </div>
             {!revealed ? (
@@ -206,7 +207,9 @@ export function Review() {
                 <p className="dictionary-translation" lang="ru">
                   {sense.translation}
                 </p>
-                <p className="eyebrow">How familiar did it feel?</p>
+                <p className="eyebrow">
+                  Your assessment · How familiar did it feel?
+                </p>
                 <div className="review-ratings">
                   {ratings.map((rating) => (
                     <button
@@ -226,8 +229,10 @@ export function Review() {
             <p className="eyebrow">One skill at a time</p>
             <h2>Recognition is a beginning.</h2>
             <p>
-              This check records your own assessment of recognising a meaning.
-              It does not measure speaking, writing or active recall.
+              Your own assessment helps plan the next encounter. It is a
+              tentative practice signal, without an AI grade or a calibrated
+              mastery score. Speaking, writing and active recall need their own
+              evidence.
             </p>
             <p className="muted">
               The first scheduler uses a transparent rule: Again returns in 10

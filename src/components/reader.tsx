@@ -8,13 +8,15 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Search,
   Sparkles,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { DictionaryEntry } from "@/domain";
 import { findEntry } from "@/infrastructure/dictionary/seed";
 import { useLearning } from "./learning-provider";
 import { Modal } from "./modal";
+import { ReaderOptions, useReaderPreferences } from "./reader-preferences";
 
 export const READING_TITLE = "The art of noticing";
 
@@ -51,7 +53,16 @@ function startingSection(progress: number): number {
 }
 
 export function Reader() {
-  const { state, ready, error, save, setReaderProgress } = useLearning();
+  const {
+    state,
+    ready,
+    error,
+    save,
+    undoSave,
+    canUndoSave: providerCanUndoSave,
+    setReaderProgress,
+  } = useLearning();
+  const readingOptions = useReaderPreferences();
   const [chosenSection, setChosenSection] = useState<number | null>(null);
   const [lookup, setLookup] = useState<{
     word: string;
@@ -60,8 +71,18 @@ export function Reader() {
   } | null>(null);
   const [selectedSense, setSelectedSense] = useState("");
   const [savedNow, setSavedNow] = useState(false);
+  const [freshSavedSenseId, setFreshSavedSenseId] = useState<string | null>(
+    null,
+  );
+  const [undone, setUndone] = useState(false);
   const [complete, setComplete] = useState(false);
-  const selectionHandled = useRef(false);
+  const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
+  const [selectionCandidate, setSelectionCandidate] = useState<{
+    word: string;
+    context: string;
+    tokenId?: string;
+  } | null>(null);
+  const readerBodyRef = useRef<HTMLDivElement>(null);
   const sectionIndex = chosenSection ?? startingSection(state.readerProgress);
   const section = sections[sectionIndex];
   const activeSense = lookup?.entry?.senses.find(
@@ -71,53 +92,103 @@ export function Reader() {
     activeSense &&
     state.saved.some((saved) => saved.senseId === activeSense.id),
   );
+  const canUndoSave = Boolean(
+    activeSense &&
+    savedNow &&
+    freshSavedSenseId === activeSense.id &&
+    alreadySaved &&
+    providerCanUndoSave(activeSense.id) &&
+    !state.evidence.some((event) => event.senseId === activeSense.id),
+  );
+  const readerStyle = {
+    "--reader-font-size": `${readingOptions.preferences.fontSize}px`,
+    "--reader-line-height":
+      readingOptions.preferences.lineSpacing === "roomy" ? "2" : "1.75",
+  } as CSSProperties;
 
-  function openWord(word: string, context: string) {
+  function openWord(word: string, context: string, tokenId?: string) {
     const entry = findEntry(word);
     setLookup({ word, context: context.slice(0, 500), entry });
+    setHighlightedToken(tokenId ?? null);
+    setSelectionCandidate(null);
     setSelectedSense(entry?.senses.length === 1 ? entry.senses[0].id : "");
     setSavedNow(false);
+    setFreshSavedSenseId(null);
+    setUndone(false);
   }
 
-  function selectedWord(context: string): boolean {
-    const selection = window.getSelection()?.toString().trim() ?? "";
-    if (!/^[a-zA-Z]+(?:['’-][a-zA-Z]+)*$/.test(selection)) return false;
-    selectionHandled.current = true;
-    openWord(selection, context);
-    window.getSelection()?.removeAllRanges();
-    return true;
-  }
+  useEffect(() => {
+    if (lookup !== null) return;
+    const readSelection = () => {
+      const selection = window.getSelection();
+      const word = selection?.toString().trim() ?? "";
+      const body = readerBodyRef.current;
+      if (
+        !body ||
+        !selection?.rangeCount ||
+        !/^[a-zA-Z]+(?:['’-][a-zA-Z]+)*$/.test(word)
+      ) {
+        setSelectionCandidate(null);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      if (
+        !body.contains(range.startContainer) ||
+        !body.contains(range.endContainer)
+      ) {
+        setSelectionCandidate(null);
+        return;
+      }
+      const anchor =
+        range.startContainer instanceof Element
+          ? range.startContainer
+          : range.startContainer.parentElement;
+      const context = anchor?.closest<HTMLElement>("[data-reader-sentence]")
+        ?.dataset.readerSentence;
+      if (!context) return;
+      const tokenId = anchor?.closest<HTMLElement>("[data-reader-token]")?.id;
+      setSelectionCandidate((previous) =>
+        previous?.word === word &&
+        previous.context === context &&
+        previous.tokenId === tokenId
+          ? previous
+          : { word, context, tokenId },
+      );
+    };
+    document.addEventListener("selectionchange", readSelection);
+    return () => document.removeEventListener("selectionchange", readSelection);
+  }, [lookup, sectionIndex]);
 
-  function paragraph(text: string) {
+  function paragraph(text: string, paragraphIndex: number) {
     const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) ?? [text];
     return sentences.map((sentence, sentenceIndex) => (
-      <span key={sentenceIndex} onPointerUp={() => selectedWord(sentence)}>
+      <span key={sentenceIndex} data-reader-sentence={sentence}>
         {sentence
           .split(/([A-Za-z]+(?:['’-][A-Za-z]+)*)/g)
-          .map((token, tokenIndex) =>
-            /^[A-Za-z]/.test(token) ? (
+          .map((token, tokenIndex) => {
+            const tokenId = `reader-word-${sectionIndex}-${paragraphIndex}-${sentenceIndex}-${tokenIndex}`;
+            return /^[A-Za-z]/.test(token) ? (
               <button
-                className={`reader-word${findEntry(token) ? " reader-word-known" : ""}`}
+                className={`reader-word${findEntry(token) ? " reader-word-known" : ""}${highlightedToken === tokenId ? " reader-word-selected" : ""}`}
                 key={tokenIndex}
+                id={tokenId}
+                data-reader-token
                 aria-label={`Look up ${token}`}
-                onPointerDown={() => {
-                  selectionHandled.current = false;
-                }}
-                onClick={() => {
-                  if (selectionHandled.current) {
-                    selectionHandled.current = false;
-                    return;
-                  }
-                  if (!window.getSelection()?.toString().trim())
-                    openWord(token, sentence);
+                aria-pressed={highlightedToken === tokenId}
+                onClick={(event) => {
+                  if (
+                    event.detail === 0 ||
+                    !window.getSelection()?.toString().trim()
+                  )
+                    openWord(token, sentence, tokenId);
                 }}
               >
                 {token}
               </button>
             ) : (
               <span key={tokenIndex}>{token}</span>
-            ),
-          )}
+            );
+          })}
       </span>
     ));
   }
@@ -127,6 +198,8 @@ export function Reader() {
     if (setReaderProgress(Math.round((bounded * 100) / sections.length))) {
       setChosenSection(bounded);
       setComplete(false);
+      setSelectionCandidate(null);
+      setHighlightedToken(null);
       window.scrollTo({ top: 0, behavior: "instant" });
     }
   }
@@ -145,13 +218,25 @@ export function Reader() {
         <Link className="reader-brand" href="/">
           LEXIS <span>reader</span>
         </Link>
-        <span className="reader-section-count">
-          {sectionIndex + 1} <span className="muted">/ {sections.length}</span>
-        </span>
+        <div className="reader-header-tools">
+          <ReaderOptions {...readingOptions} />
+          <span
+            className="reader-section-count"
+            aria-label={`Section ${sectionIndex + 1} of ${sections.length}`}
+          >
+            {sectionIndex + 1}{" "}
+            <span className="muted">/ {sections.length}</span>
+          </span>
+        </div>
       </header>
       {error && (
         <p className="status-banner error" role="alert">
           {error} <Link href="/core">Open Core</Link>
+        </p>
+      )}
+      {readingOptions.error && (
+        <p className="status-banner error" role="alert">
+          {readingOptions.error}
         </p>
       )}
       {!ready ? (
@@ -174,23 +259,48 @@ export function Reader() {
             <article className="reader-article">
               <div className="reader-intro">
                 <p className="eyebrow">
-                  <BookOpen size={14} /> A LEXIS original · Short read
+                  <BookOpen size={14} /> LEXIS sample · Offline reading
                 </p>
                 <h1>{READING_TITLE}</h1>
                 <p className="reader-deck">
                   A little space to slow down. A new way to see familiar things.
                 </p>
                 <p className="reader-instruction">
-                  <Sparkles size={14} /> Tap a word to explore its meaning.
+                  <Sparkles size={14} /> Tap a word, or select text and choose
+                  Look up selection.
                 </p>
               </div>
-              <div className="reader-body" lang="en">
+              {selectionCandidate && (
+                <div className="reader-selection-action">
+                  <button
+                    className="button secondary"
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() =>
+                      openWord(
+                        selectionCandidate.word,
+                        selectionCandidate.context,
+                        selectionCandidate.tokenId,
+                      )
+                    }
+                  >
+                    <Search size={16} /> Look up selection:{" "}
+                    {selectionCandidate.word}
+                  </button>
+                </div>
+              )}
+              <div
+                className="reader-body"
+                lang="en"
+                ref={readerBodyRef}
+                data-reader-font={readingOptions.preferences.font}
+                style={readerStyle}
+              >
                 <p className="eyebrow reader-section-label">
                   0{sectionIndex + 1} — {section.label}
                 </p>
-                {section.paragraphs.map((text) => (
+                {section.paragraphs.map((text, paragraphIndex) => (
                   <p className="reader-paragraph" key={text}>
-                    {paragraph(text)}
+                    {paragraph(text, paragraphIndex)}
                   </p>
                 ))}
               </div>
@@ -234,8 +344,8 @@ export function Reader() {
                 </div>
               )}
               <p className="reader-credit muted">
-                Original text written for LEXIS. Reading position stays on this
-                device.
+                Original sample written for LEXIS. Your current section stays on
+                this device.
               </p>
             </article>
             <aside className="reader-tools glass-panel">
@@ -249,8 +359,8 @@ export function Reader() {
                 sentence that brought it to life.
               </p>
               <p className="muted">
-                This first reading includes an editorial dictionary for eight
-                words. Other words show an honest empty state.
+                Eight editorial dictionary entries are available in this offline
+                sample.
               </p>
               <Link className="text-link" href="/learn">
                 Your review queue <ArrowRight size={15} />
@@ -270,6 +380,10 @@ export function Reader() {
             <div className="dictionary-header">
               <p className="eyebrow">In this sentence</p>
               <h2 className="dictionary-word">{lookup.entry.lexeme.lemma}</h2>
+              {lookup.word.toLowerCase() !==
+                lookup.entry.lexeme.lemma.toLowerCase() && (
+                <p className="muted">Selected form: {lookup.word}</p>
+              )}
               <p className="dictionary-ipa">
                 {lookup.entry.lexeme.ipa}{" "}
                 <span>· {lookup.entry.lexeme.partOfSpeech}</span>
@@ -297,6 +411,8 @@ export function Reader() {
                     onChange={() => {
                       setSelectedSense(sense.id);
                       setSavedNow(false);
+                      setFreshSavedSenseId(null);
+                      setUndone(false);
                     }}
                   />
                   <span>
@@ -313,22 +429,6 @@ export function Reader() {
                 </label>
               ))}
             </fieldset>
-            {activeSense && (
-              <div className="dictionary-detail">
-                <p className="eyebrow">Another encounter</p>
-                <p className="dictionary-example">{activeSense.example}</p>
-                <div
-                  className="dictionary-collocations"
-                  aria-label="Common combinations"
-                >
-                  {activeSense.collocations.map((collocation) => (
-                    <span className="pill" key={collocation}>
-                      {collocation}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="dictionary-actions">
               {error && (
                 <p className="status-banner error" role="alert">
@@ -339,8 +439,11 @@ export function Reader() {
                 className="button primary"
                 disabled={!activeSense || alreadySaved}
                 onClick={() => {
-                  if (activeSense && save(activeSense.id, lookup.context))
+                  if (activeSense && save(activeSense.id, lookup.context)) {
                     setSavedNow(true);
+                    setFreshSavedSenseId(activeSense.id);
+                    setUndone(false);
+                  }
                 }}
               >
                 {alreadySaved ? (
@@ -367,9 +470,53 @@ export function Reader() {
                   <Link className="text-link" href="/learn">
                     Go to Smart Review <ArrowRight size={16} />
                   </Link>
+                  {canUndoSave && activeSense && (
+                    <button
+                      className="button ghost dictionary-undo"
+                      onClick={() => {
+                        if (undoSave(activeSense.id)) {
+                          setSavedNow(false);
+                          setFreshSavedSenseId(null);
+                          setUndone(true);
+                        }
+                      }}
+                    >
+                      Undo save
+                    </button>
+                  )}
                 </div>
               )}
+              {undone && (
+                <p className="feedback" role="status">
+                  Meaning removed from your study pool.
+                </p>
+              )}
             </div>
+            {activeSense && (
+              <details className="dictionary-explore" key={activeSense.id}>
+                <summary>Explore this meaning</summary>
+                <div className="dictionary-detail">
+                  <p className="eyebrow">Another encounter</p>
+                  <p className="dictionary-example">{activeSense.example}</p>
+                  <div
+                    className="dictionary-collocations"
+                    aria-label="Common combinations"
+                  >
+                    {activeSense.collocations.map((collocation) => (
+                      <span className="pill" key={collocation}>
+                        {collocation}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="muted">{lookup.entry.provenance.rights}</p>
+                </div>
+              </details>
+            )}
+            <p className="dictionary-provenance muted">
+              Offline editorial sample · {lookup.entry.provenance.provider} ·{" "}
+              {lookup.entry.provenance.version}. Original definitions and
+              examples; audio is not included.
+            </p>
           </>
         ) : (
           lookup && (
