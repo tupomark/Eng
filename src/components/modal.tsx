@@ -27,8 +27,14 @@ export function Modal({
       ref={ref}
       aria-labelledby={id}
       className={`modal ${className}`}
-      onCancel={onClose}
-      onClose={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClose={(event) => {
+        // A queued close event may arrive after the dialog has reopened.
+        if (!event.currentTarget.open) onClose();
+      }}
       onClick={(event) => {
         if (event.target !== event.currentTarget) return;
         const bounds = event.currentTarget.getBoundingClientRect();

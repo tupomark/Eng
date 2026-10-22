@@ -60,7 +60,7 @@ test("a saved meaning reaches review, survives reload and can have its evidence 
   );
   await expect(
     page.getByLabel("Recognition estimate", { exact: true }),
-  ).toHaveText("12/100");
+  ).toHaveText("Tentative");
   await expect(page.getByLabel("Writing estimate", { exact: true })).toHaveText(
     "—",
   );
@@ -130,12 +130,89 @@ test("reopening a saved meaning keeps one copy and does not fabricate learning e
   await expect(
     reopened.getByRole("button", { name: "Saved to your core" }),
   ).toBeDisabled();
+  await expect(
+    reopened.getByRole("button", { name: "Undo save", exact: true }),
+  ).toHaveCount(0);
   const durable = await page.evaluate(
     (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
     STORAGE_KEY,
   );
   expect(durable.saved).toHaveLength(1);
   expect(durable.evidence).toEqual([]);
+});
+
+test("dictionary details are optional and an unreviewed fresh save can be undone without removing history", async ({
+  page,
+}) => {
+  const dictionary = await saveFromHome(page);
+  const example = dictionary.getByText(
+    "We lingered by the window as the afternoon light faded.",
+    { exact: true },
+  );
+  await expect(example).not.toBeVisible();
+  await dictionary.getByText("Explore this meaning", { exact: true }).click();
+  await expect(example).toBeVisible();
+  await expect(dictionary.locator(".dictionary-provenance")).toContainText(
+    "Offline editorial sample",
+  );
+  await expect(dictionary.locator(".dictionary-provenance")).toContainText(
+    "editorial-v1",
+  );
+  await expect(dictionary.locator(".dictionary-provenance")).toContainText(
+    "audio is not included",
+  );
+
+  await dictionary.getByRole("link", { name: "Go to Smart Review" }).click();
+  await page.getByRole("button", { name: "Show meaning" }).click();
+  await page.getByRole("button", { name: /^Good/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "A little more familiar.", exact: true }),
+  ).toBeVisible();
+  const before = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+    STORAGE_KEY,
+  );
+
+  await page.goto("/reader");
+  await page
+    .getByRole("button", { name: "Look up stillness", exact: true })
+    .first()
+    .click();
+  await dictionary.getByRole("button", { name: /Save this meaning/ }).click();
+  await expect(
+    dictionary.getByRole("button", { name: "Undo save", exact: true }),
+  ).toBeVisible();
+  const afterSave = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+    STORAGE_KEY,
+  );
+  expect(afterSave.saved).toHaveLength(2);
+  expect(afterSave.evidence).toEqual(before.evidence);
+  await dictionary
+    .getByRole("button", { name: "Undo save", exact: true })
+    .click();
+  await expect(dictionary.getByRole("status")).toContainText(
+    "Meaning removed from your study pool.",
+  );
+  await expect(
+    dictionary.getByRole("button", { name: /Save this meaning/ }),
+  ).toBeEnabled();
+  const afterUndo = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+    STORAGE_KEY,
+  );
+  expect(afterUndo).toEqual(before);
+  await dictionary
+    .getByRole("button", { name: "Close dialog", exact: true })
+    .click();
+  await openFirstMeaning(page);
+  await expect(
+    dictionary.getByRole("button", { name: "Undo save", exact: true }),
+  ).toHaveCount(0);
+  await page.goto("/learn");
+  await expect(
+    page.getByRole("heading", { name: "You are up to date.", exact: true }),
+  ).toBeVisible();
 });
 
 test("an unavailable saved meaning does not block the next available review", async ({
@@ -258,10 +335,15 @@ test("LEXIS Command opens from the keyboard, searches words and navigates to Lea
   await search.fill("wander");
   await command.getByRole("button", { name: /^wander/ }).click();
   await expect(command).toContainText("without a fixed route or destination");
-  await page.keyboard.press("Escape");
-  await expect(command).not.toBeVisible();
-  await expect(trigger).toBeFocused();
-  await page.keyboard.press("Control+k");
+  for (let repeat = 0; repeat < 3; repeat += 1) {
+    await page.keyboard.press("Escape");
+    await expect(command).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press("Control+k");
+    await expect(command).toBeVisible();
+    await expect(search).toHaveValue("wander");
+    await expect(command).toContainText("without a fixed route or destination");
+  }
   await search.fill("Learn");
   await command
     .getByRole("button", { name: "Open Learn", exact: true })
