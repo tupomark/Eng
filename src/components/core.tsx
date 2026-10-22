@@ -63,7 +63,7 @@ export function Core() {
           <h2>
             {state.saved.length
               ? `${state.saved.length} meanings taking shape.`
-              : "A new constellation begins here."}
+              : "A new understanding begins here."}
           </h2>
           <p className="muted">
             Your Core keeps each meaning and each skill separate. Saving a
@@ -103,7 +103,7 @@ export function Core() {
                   className="skill-estimate"
                   aria-label={`${labels[skill]} estimate`}
                 >
-                  {score === null ? "—" : `${score}/100`}
+                  {score === null ? "—" : "Tentative"}
                 </span>
               </div>
             );
@@ -111,9 +111,9 @@ export function Core() {
         </div>
         <p className="explanation-note">
           <Info size={16} />
-          Estimates reflect your own recognition ratings using{" "}
-          {SCHEDULER_VERSION}. They are practice signals, not validated
-          proficiency scores. Other skills need their own exercises.
+          These tentative signals come from your own recognition ratings using{" "}
+          {SCHEDULER_VERSION}. They do not measure proficiency. Other skills
+          need their own exercises; no probability of mastery is inferred.
         </p>
       </section>
       <section>

@@ -1,14 +1,7 @@
 "use client";
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BookOpen,
-  Layers3,
-  Sparkles,
-  Clock3,
-} from "lucide-react";
-import { dueSenses, deriveProgress } from "@/domain";
+import { ArrowRight, ArrowUpRight, BookOpen, Layers3, Mic } from "lucide-react";
+import { dueSenses } from "@/domain";
 import { Shell } from "./shell";
 import { Orb } from "./orb";
 import { useLearning } from "./learning-provider";
@@ -16,80 +9,32 @@ import { useLearning } from "./learning-provider";
 export function Home() {
   const { state, ready } = useLearning();
   const due = dueSenses(state, new Date()).length;
-  const evidence = state.evidence.filter((item) => !item.disputedAt);
-  const skills = new Set(
-    deriveProgress(state)
-      .filter((item) => item.attempts > 0)
-      .map((item) => item.skill),
-  ).size;
+  const reviews = state.evidence.filter((item) => !item.disputedAt).length;
+  const section = Math.min(3, Math.round(state.readerProgress / (100 / 3)) + 1);
   return (
     <Shell title="Home">
       <div className="home-heading">
         <div>
-          <p className="eyebrow">
-            <Sparkles size={15} className="small-star" aria-hidden="true" /> A
-            LITTLE SPACE FOR POSSIBILITY
-          </p>
+          <p className="eyebrow">YOUR PERSONAL ENGLISH SPACE</p>
           <h1>
-            A language,
-            <br />
-            <span>becoming yours.</span>
+            {state.saved.length || state.readerProgress
+              ? "Good to see you again."
+              : "A little space to begin."}
           </h1>
           <p className="intro-copy">
-            Make a little room for English. See where it takes you.
+            Continue a reading. Keep a meaning. Make it familiar.
           </p>
         </div>
-        <div className="chapter-label">
-          <span>YOUR NEXT CHAPTER</span>
-          <i />
-          <span>ONE ENCOUNTER AT A TIME</span>
-        </div>
       </div>
-      <section className="home-grid" aria-label="Your learning overview">
-        <Link href="/core" className="living-core-card">
+      <section
+        className="home-grid balanced-home"
+        aria-label="Your learning overview"
+      >
+        <article className="continue-card glass-panel">
           <div className="card-label">
-            <span className="light-dot" />
-            LIVING CORE
-            <ArrowUpRight size={19} />
-          </div>
-          <div className="core-visual">
-            <Orb />
-          </div>
-          <div className="core-copy">
-            <p className="tiny">CONNECTED BY UNDERSTANDING</p>
-            <h2>
-              Every encounter
-              <br />
-              leaves a trace.
-            </h2>
-            <p>
-              Your meanings. Your skills. A fuller picture
-              <br className="desktop-only" /> of the English that is becoming
-              yours.
-            </p>
-          </div>
-          <div className="core-card-footer">
-            <span>
-              <i />
-              {state.saved.length
-                ? `${state.saved.length} meanings taking shape`
-                : "Your first connection is waiting"}
-            </span>
-            <span className="circle-arrow">
-              <ArrowRight size={17} />
-            </span>
-          </div>
-        </Link>
-        <div className="continue-card glass-panel">
-          <div className="card-label">
-            <BookOpen size={16} />
-            PICK UP A NEW PERSPECTIVE
-            <span className="label-end">
-              {Math.min(3, Math.round(state.readerProgress / (100 / 3)) + 1)
-                .toString()
-                .padStart(2, "0")}{" "}
-              / 03
-            </span>
+            <BookOpen size={17} />
+            <span>CONTINUE LEARNING</span>
+            <span className="label-end">0{section} / 03</span>
           </div>
           <div className="reading-preview">
             <div className="book-cover" aria-hidden="true">
@@ -108,7 +53,7 @@ export function Home() {
               </small>
             </div>
             <div>
-              <p className="eyebrow">THE EVERYDAY COLLECTION</p>
+              <p className="eyebrow">A LEXIS ORIGINAL</p>
               <h2>
                 The art of
                 <br />
@@ -116,7 +61,7 @@ export function Home() {
               </h2>
               <p>A slower look at an ordinary day.</p>
               <div className="reading-meta">
-                <span>Original reading</span>
+                <span>Sample reading</span>
                 <span>3 short parts</span>
               </div>
             </div>
@@ -125,35 +70,69 @@ export function Home() {
             <span>
               {state.readerProgress
                 ? `${Math.round(state.readerProgress)}% explored`
-                : "A fresh page, just for you"}
+                : "An open page, ready when you are."}
             </span>
-            <span>
-              <Clock3 size={12} /> 3 min read
-            </span>
+            <span>About 3 min</span>
           </div>
           <div className="progress-track">
             <span style={{ width: `${state.readerProgress}%` }} />
           </div>
-          <Link className="button dark" href="/reader">
+          <Link className="button primary" href="/reader">
             {state.readerProgress > 0 ? "Continue reading" : "Start reading"}
-            <ArrowRight size={16} />
+            <ArrowRight size={17} />
           </Link>
-        </div>
+          <p className="sample-disclosure">
+            Local sample · eight-word editorial dictionary
+          </p>
+        </article>
+        <Link className="living-core-card" href="/core">
+          <div className="card-label">
+            <span className="light-dot" />
+            LIVING CORE
+            <ArrowUpRight size={18} />
+          </div>
+          <div className="core-visual">
+            <Orb />
+          </div>
+          <div className="core-copy">
+            <h2>
+              Understanding,
+              <br />
+              taking shape.
+            </h2>
+            <p>
+              {state.saved.length
+                ? `${state.saved.length} ${state.saved.length === 1 ? "meaning" : "meanings"} collected with context.`
+                : "Your first encounter is a place to start."}
+            </p>
+          </div>
+          <div className="core-card-footer">
+            <span>
+              {ready
+                ? `${reviews} self-rated ${reviews === 1 ? "review" : "reviews"}`
+                : "Opening your history…"}
+            </span>
+            <span>
+              Explore your Core
+              <ArrowRight size={14} />
+            </span>
+          </div>
+        </Link>
         <div className="daily-review glass-panel">
           <div className="review-icon">
-            <Layers3 size={23} strokeWidth={1.4} />
+            <Layers3 size={23} strokeWidth={1.5} />
           </div>
           <div className="daily-review-copy">
             <p className="eyebrow">SMART REVIEW</p>
             <h2>
               {due
                 ? `${due} ${due === 1 ? "meaning" : "meanings"} to revisit`
-                : "A little practice. A lasting trace."}
+                : "A little, often."}
             </h2>
             <p>
               {due
-                ? "Bring a familiar meaning a little closer."
-                : "Save a meaning as you read. Find it here when it’s time."}
+                ? "Return to a meaning in its original context."
+                : "Saved meanings return here for practice."}
             </p>
           </div>
           <Link
@@ -161,65 +140,23 @@ export function Home() {
             href="/learn"
             aria-label="Open Smart Review"
           >
-            <ArrowUpRight size={22} />
+            <ArrowUpRight size={21} />
           </Link>
         </div>
       </section>
-      <section className="lower-grid">
-        <div className="progress-panel">
-          <div className="section-heading">
-            <h2>Your story so far</h2>
-            <Link href="/core" className="text-link">
-              Explore your Core
-              <ArrowUpRight size={14} />
-            </Link>
-          </div>
-          <div className="stat-row">
-            <div>
-              <span className="stat-number">
-                {ready ? state.saved.length.toString().padStart(2, "0") : "—"}
-                <small>meanings</small>
-              </span>
-              <span>Collected with context</span>
-            </div>
-            <div>
-              <span className="stat-number">
-                {ready ? evidence.length.toString().padStart(2, "0") : "—"}
-                <small>encounters</small>
-              </span>
-              <span>Reviewed and reflected on</span>
-            </div>
-            <div>
-              <span className="stat-number">
-                {ready ? skills.toString().padStart(2, "0") : "—"}
-                <small>of 5 skills</small>
-              </span>
-              <span>With practice evidence</span>
-            </div>
-          </div>
-          <p className="progress-note">
-            <Sparkles size={14} /> Progress starts with an encounter, not a
-            perfect score.
-          </p>
-        </div>
-        <Link href="/tutor" className="voice-teaser">
-          <div>
-            <p className="eyebrow">A SPACE TO SPEAK</p>
-            <h2>Find your voice.</h2>
-            <p>
-              Meet the softer side
-              <br />
-              of speaking practice.
-            </p>
-            <span className="text-link">
-              Explore the concept
-              <ArrowUpRight size={14} />
-            </span>
-          </div>
-          <Orb variant="voice" />
-          <span className="prototype-tag">VISUAL CONCEPT</span>
-        </Link>
-      </section>
+      <Link className="voice-invitation" href="/tutor">
+        <span className="voice-invitation-icon">
+          <Mic size={21} strokeWidth={1.5} />
+        </span>
+        <span>
+          <span className="eyebrow">A SPACE TO SPEAK</span>
+          <strong>Find your voice.</strong>
+          <span className="muted">
+            Explore the visual concept. No recording.
+          </span>
+        </span>
+        <ArrowUpRight size={19} />
+      </Link>
     </Shell>
   );
 }
