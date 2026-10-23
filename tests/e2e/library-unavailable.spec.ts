@@ -62,7 +62,11 @@ test("an unavailable-only collection keeps its record, context and exported hist
 }) => {
   const state = fixture([unavailable]);
   await openFixture(page, state);
-  await expect(page.locator(".library-heading .count-label")).toHaveText("1");
+  await expect(
+    page
+      .getByRole("heading", { name: "Your meanings 1", exact: true })
+      .locator(".count-label"),
+  ).toHaveText("1");
   const card = page.locator("article.meaning-card");
   await expect(card).toHaveCount(1);
   await expect(
@@ -93,7 +97,11 @@ test("a mixed collection searches unavailable metadata and contexts without chan
 }) => {
   const state = fixture([unavailable, available]);
   await openFixture(page, state);
-  await expect(page.locator(".library-heading .count-label")).toHaveText("2");
+  await expect(
+    page
+      .getByRole("heading", { name: "Your meanings 2", exact: true })
+      .locator(".count-label"),
+  ).toHaveText("2");
   const cards = page.locator("article.meaning-card");
   await expect(cards).toHaveCount(2);
   const search = page.getByRole("textbox", { name: "Search saved meanings" });
@@ -116,7 +124,11 @@ test("a mixed collection searches unavailable metadata and contexts without chan
   await expect(
     page.getByRole("heading", { name: "No meanings match yet." }),
   ).toBeVisible();
-  await expect(page.locator(".library-heading .count-label")).toHaveText("2");
+  await expect(
+    page
+      .getByRole("heading", { name: "Your meanings 2", exact: true })
+      .locator(".count-label"),
+  ).toHaveText("2");
   await search.fill("   ");
   await expect(cards).toHaveCount(2);
   await expectStoredAndExported(page, state);
