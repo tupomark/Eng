@@ -147,7 +147,7 @@ test("a permitted local WAV persists privately and a disguised audio file cannot
 }) => {
   await sampleReady(page);
   await page
-    .getByLabel("Choose audio or video", { exact: true })
+    .getByRole("button", { name: "Choose audio or video", exact: true })
     .setInputFiles(resolve("public/audio/lexis-coast.wav"));
   await page
     .getByRole("checkbox", { name: /I am allowed to use this file/u })
@@ -161,7 +161,7 @@ test("a permitted local WAV persists privately and a disguised audio file cannot
     page.getByRole("heading", { name: "lexis-coast", exact: true }),
   ).toBeVisible();
   await page
-    .getByLabel("Choose audio or video", { exact: true })
+    .getByRole("button", { name: "Choose audio or video", exact: true })
     .setInputFiles({
       name: "not-a-recording.wav",
       mimeType: "audio/wav",
@@ -348,7 +348,7 @@ test("a pending media import cannot recreate data after profile removal", async 
   });
   await sampleReady(page);
   await page
-    .getByLabel("Choose audio or video", { exact: true })
+    .getByRole("button", { name: "Choose audio or video", exact: true })
     .setInputFiles(resolve("public/audio/lexis-coast.wav"));
   await page
     .getByRole("checkbox", { name: /I am allowed to use this file/u })
