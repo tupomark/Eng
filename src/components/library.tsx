@@ -11,10 +11,11 @@ import {
 import { seedEntries } from "@/infrastructure/dictionary/seed";
 import { Shell } from "./shell";
 import { useLearning } from "./learning-provider";
+import { MaterialLibrary } from "./materials/material-library";
 
-export function Library() {
+export function Library({ initialQuery = "" }: { initialQuery?: string }) {
   const { state, ready } = useLearning();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const saved = state.saved
     .map((item) => {
@@ -50,6 +51,7 @@ export function Library() {
           Keep the meaning. Keep the moment you found it.
         </p>
       </div>
+      <MaterialLibrary />
       <section className="library-reading glass-panel">
         <div className="library-book-mark">
           <BookOpen size={28} strokeWidth={1.3} />
