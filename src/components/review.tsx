@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ArrowRight, Check, Eye, Layers3, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { dueSenses, deriveProgress, type Rating } from "@/domain";
+import { type Rating } from "@/domain";
+import { useReviewOverview } from "./use-review-overview";
 import { seedEntries } from "@/infrastructure/dictionary/seed";
 import { useLearning } from "./learning-provider";
 import { Shell } from "./shell";
@@ -19,12 +20,12 @@ const availableSenseIds = new Set(
 );
 
 export function Review() {
-  const { state, ready, review, now } = useLearning();
+  const { state, ready, review, now, progress } = useLearning();
+  const { legacyDue: allDue, fsrsDue, migrated } = useReviewOverview();
   const [revealedSense, setRevealedSense] = useState<string | null>(null);
   const [reviewed, setReviewed] = useState(0);
   const ratingInFlight = useRef(false);
 
-  const allDue = dueSenses(state, now);
   const due = allDue.filter((saved) => availableSenseIds.has(saved.senseId));
   const unavailableDueCount = allDue.length - due.length;
   const unavailableCount = state.saved.filter(
@@ -41,10 +42,11 @@ export function Review() {
     );
   const sense = entry?.senses.find((item) => item.id === current?.senseId);
   const revealed = Boolean(sense && revealedSense === sense.id);
-  const future = deriveProgress(state)
+  const future = progress
     .filter(
       (item) =>
         availableSenseIds.has(item.senseId) &&
+        !migrated.has(item.senseId) &&
         item.skill === "recognition" &&
         item.dueAt &&
         Date.parse(item.dueAt) > Date.parse(now),
@@ -71,6 +73,32 @@ export function Review() {
           encounter.
         </p>
       </div>
+      <nav aria-label="Learning workspaces" className="device-actions">
+        <Link className="button secondary" href="/learn/practice">
+          Smart Cards · FSRS practice
+        </Link>
+        <Link className="text-link" href="/writing">
+          Writing Studio
+        </Link>
+        <Link className="text-link" href="/grammar">
+          Grammar Atlas
+        </Link>
+        <Link className="text-link" href="/listening">
+          Listening Studio
+        </Link>
+      </nav>
+      {fsrsDue.length > 0 && (
+        <p className="status-banner" role="status">
+          {fsrsDue.length} FSRS objectives are due.{" "}
+          <Link href="/learn/practice">Open FSRS practice</Link>
+        </p>
+      )}
+      {migrated.size > 0 && (
+        <p className="muted">
+          Migrated recognition objectives use their FSRS history in Smart Cards.
+          They are not counted again in the legacy self-check queue.
+        </p>
+      )}
       {ready && unavailableCount > 0 && (
         <p className="status-banner" role="status">
           {unavailableCount} saved{" "}
@@ -82,6 +110,21 @@ export function Review() {
       {!ready ? (
         <div className="glass-panel empty-state" role="status">
           Opening your review queue…
+        </div>
+      ) : !current && fsrsDue.length > 0 ? (
+        <div className="glass-panel empty-state">
+          <Layers3 size={32} strokeWidth={1.4} />
+          <p className="eyebrow">Smart Review</p>
+          <h2>Your practice is ready.</h2>
+          <p>
+            {fsrsDue.length}{" "}
+            {fsrsDue.length === 1 ? "objective is" : "objectives are"} due in
+            Smart Cards. The original self-check queue has no available meaning
+            due right now.
+          </p>
+          <Link className="button primary" href="/learn/practice">
+            Open FSRS practice <ArrowRight size={17} />
+          </Link>
         </div>
       ) : !state.saved.length ? (
         <div className="glass-panel empty-state">
