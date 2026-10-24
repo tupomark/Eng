@@ -19,9 +19,11 @@ import {
   deleteLocalMedia,
   LISTENING_SAMPLE_ID,
   listLocalMedia,
+  loadLocalMedia,
   loadListeningSession,
   saveLocalMedia,
   type LocalMediaAsset,
+  type LocalMediaMetadata,
 } from "@/infrastructure/listening/media-repository";
 import {
   SAMPLE_TRANSCRIPT,
@@ -85,7 +87,8 @@ export function ListeningWorkspace({
 }) {
   const router = useRouter();
   const tasks = useTaskLearning();
-  const [assets, setAssets] = useState<LocalMediaAsset[]>([]);
+  const [assets, setAssets] = useState<LocalMediaMetadata[]>([]);
+  const [loadedAsset, setLoadedAsset] = useState<LocalMediaAsset | null>(null);
   const [session, setSession] = useState(() =>
     initialListeningSession(sourceId),
   );
@@ -111,7 +114,7 @@ export function ListeningWorkspace({
   const queue = useRef<Promise<void>>(Promise.resolve());
   const lastSaved = useRef(0);
   const loadedPosition = useRef(false);
-  const asset = assets.find((item) => item.id === sourceId);
+  const asset = loadedAsset?.id === sourceId ? loadedAsset : null;
   const sample = sourceId === LISTENING_SAMPLE_ID;
   const sessionReady = ready && session.sourceId === sourceId;
   const hasSource = sample || !!asset;
@@ -152,6 +155,7 @@ export function ListeningWorkspace({
         element?.removeAttribute("src");
         element?.load();
         setAssets([]);
+        setLoadedAsset(null);
         setSession(initialListeningSession(sourceId));
         setReady(false);
         setFile(null);
@@ -216,6 +220,34 @@ export function ListeningWorkspace({
       });
     return () => {
       generation.current = token + 1;
+    };
+  }, [sourceId, sample]);
+  useEffect(() => {
+    let active = true;
+    if (sample) {
+      queueMicrotask(() => {
+        if (active) setLoadedAsset(null);
+      });
+      return () => {
+        active = false;
+      };
+    }
+    const token = generation.current;
+    loadLocalMedia(sourceId)
+      .then((loaded) => {
+        if (active && token === generation.current && !localPurgePending())
+          setLoadedAsset(loaded);
+      })
+      .catch((cause) => {
+        if (active && token === generation.current && !localPurgePending())
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Your selected media could not be opened.",
+          );
+      });
+    return () => {
+      active = false;
     };
   }, [sourceId, sample]);
   useEffect(() => {

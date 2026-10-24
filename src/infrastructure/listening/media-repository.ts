@@ -88,13 +88,24 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-function checkAsset(value: unknown): LocalMediaAsset {
+export type LocalMediaMetadata = Omit<LocalMediaAsset, "blob">;
+type StoredMedia = LocalMediaAsset & { encoding?: unknown; data?: unknown };
+
+function mediaMetadata(value: unknown): LocalMediaMetadata {
   if (!value || typeof value !== "object")
     throw new Error("A local media file could not be opened.");
-  const asset = value as LocalMediaAsset;
+  const asset = value as StoredMedia;
+  const storedBytes =
+    asset.blob instanceof Blob
+      ? asset.blob.size
+      : asset.encoding === "array-buffer-v1" &&
+          asset.data instanceof ArrayBuffer
+        ? asset.data.byteLength
+        : 0;
   if (
     asset.owner !== "local" ||
     typeof asset.id !== "string" ||
+    !asset.id ||
     asset.id.length > 200 ||
     typeof asset.title !== "string" ||
     asset.title.length > 300 ||
@@ -104,35 +115,98 @@ function checkAsset(value: unknown): LocalMediaAsset {
     typeof asset.mime !== "string" ||
     asset.mime.length > 100 ||
     !Number.isFinite(Date.parse(asset.createdAt)) ||
-    !(asset.blob instanceof Blob) ||
-    asset.byteLength !== asset.blob.size ||
+    asset.byteLength !== storedBytes ||
     asset.byteLength > MEDIA_LIMITS.maxFileBytes ||
     asset.byteLength <= 0
   )
     throw new Error(
       "A local media file is unreadable. Its data has not been replaced.",
     );
-  return asset;
+  return {
+    id: asset.id,
+    owner: "local",
+    title: asset.title,
+    fileName: asset.fileName,
+    mime: asset.mime,
+    kind: asset.kind,
+    byteLength: asset.byteLength,
+    createdAt: asset.createdAt,
+  };
 }
 
-export async function listLocalMedia(): Promise<LocalMediaAsset[]> {
+/** Old native Blob records remain readable; bytes support WebKit builds without Blob IDB. */
+export function decodeStoredMedia(value: unknown): LocalMediaAsset {
+  const metadata = mediaMetadata(value);
+  const record = value as StoredMedia;
+  const blob =
+    record.blob instanceof Blob
+      ? record.blob
+      : new Blob([record.data as ArrayBuffer], { type: metadata.mime });
+  return { ...metadata, blob };
+}
+
+/** Walk one bounded record at a time; retain metadata, never a whole library of byte arrays. */
+export async function listLocalMedia(): Promise<LocalMediaMetadata[]> {
   const database = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction("assets", "readonly");
-    const request = transaction.objectStore("assets").getAll();
+    const result: LocalMediaMetadata[] = [];
+    const request = transaction.objectStore("assets").openCursor();
     request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
       try {
-        resolve((request.result as unknown[]).map(checkAsset));
+        if (result.length >= MEDIA_LIMITS.maxFiles)
+          throw new Error("The local media list exceeds its supported limit.");
+        result.push(mediaMetadata(cursor.value));
+        cursor.continue();
       } catch (cause) {
+        transaction.abort();
         reject(cause);
       }
     };
-    request.onerror = () =>
-      reject(new Error("Your media list could not be opened."));
-    transaction.oncomplete = () => database.close();
-    transaction.onabort = () => {
+    transaction.oncomplete = () => {
+      database.close();
+      resolve(result);
+    };
+    transaction.onabort = transaction.onerror = () => {
       database.close();
       reject(new Error("Your media list could not be opened."));
+    };
+  });
+}
+
+/** Only the selected recording materializes a playback Blob. */
+export async function loadLocalMedia(
+  sourceId: string,
+): Promise<LocalMediaAsset | null> {
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction("assets", "readonly");
+    const request = transaction.objectStore("assets").get(sourceId);
+    let result: LocalMediaAsset | null = null;
+    request.onsuccess = () => {
+      try {
+        result =
+          request.result === undefined
+            ? null
+            : decodeStoredMedia(request.result);
+      } catch (cause) {
+        transaction.abort();
+        reject(cause);
+      }
+    };
+    transaction.oncomplete = () => {
+      database.close();
+      resolve(result);
+    };
+    transaction.onabort = transaction.onerror = () => {
+      database.close();
+      reject(
+        new Error(
+          "Your selected media could not be opened. Its original data has been preserved.",
+        ),
+      );
     };
   });
 }
@@ -155,10 +229,8 @@ export async function saveLocalMedia(
     );
   if (verifyPlayable)
     await verifyPlayable(file.slice(0, file.size, type.mime), type.kind);
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    await file.arrayBuffer(),
-  );
+  const data = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", data);
   const id =
     "media-" +
     Array.from(new Uint8Array(digest), (byte) =>
@@ -192,7 +264,7 @@ export async function saveLocalMedia(
       }
       if (existing.result) {
         try {
-          result = checkAsset(existing.result);
+          result = decodeStoredMedia(existing.result);
         } catch {
           transaction.abort();
         }
@@ -210,7 +282,13 @@ export async function saveLocalMedia(
           failure =
             "This device supports 10 media files. Remove one before adding another.";
           transaction.abort();
-        } else store.add(asset);
+        } else
+          store.add({
+            ...asset,
+            blob: null,
+            encoding: "array-buffer-v1",
+            data,
+          });
       };
     };
     transaction.oncomplete = () => {

@@ -8,7 +8,10 @@ import {
   updatePlayback,
   updateTranscriptVisibility,
 } from "@/domain/listening/session";
-import { sniffMedia } from "@/infrastructure/listening/media-repository";
+import {
+  decodeStoredMedia,
+  sniffMedia,
+} from "@/infrastructure/listening/media-repository";
 import { sampleListeningTask } from "@/infrastructure/listening/sample-task";
 import {
   beginTask,
@@ -21,6 +24,36 @@ import {
 
 const NOW = "2026-10-24T12:00:00.000Z";
 describe("listening session and help provenance", () => {
+  it("reads legacy Blob and portable byte records without accepting missing or mismatched content", async () => {
+    const bytes = new TextEncoder().encode("bounded fixture");
+    const metadata = {
+      id: "media-fixture",
+      owner: "local",
+      title: "Fixture",
+      fileName: "fixture.wav",
+      mime: "audio/wav",
+      kind: "audio",
+      byteLength: bytes.byteLength,
+      createdAt: NOW,
+    };
+    const legacy = decodeStoredMedia({ ...metadata, blob: new Blob([bytes]) });
+    const portable = decodeStoredMedia({
+      ...metadata,
+      encoding: "array-buffer-v1",
+      data: bytes.buffer,
+    });
+    expect(await legacy.blob.text()).toBe("bounded fixture");
+    expect(await portable.blob.text()).toBe("bounded fixture");
+    expect(portable).not.toHaveProperty("data");
+    expect(() =>
+      decodeStoredMedia({
+        ...metadata,
+        encoding: "array-buffer-v1",
+        data: new ArrayBuffer(1),
+      }),
+    ).toThrow("unreadable");
+    expect(() => decodeStoredMedia(metadata)).toThrow("unreadable");
+  });
   it("rejects mismatched source IDs, invalid clocks/rates and malformed positions", () => {
     const initial = initialListeningSession("source");
     expect(() =>

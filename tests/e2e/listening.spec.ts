@@ -189,7 +189,7 @@ test("a permitted local WAV persists privately and a disguised audio file cannot
   await expect(page).toHaveURL(/\/listening$/u);
 });
 
-test("a cancelled microphone permission request releases a late-granted real media track", async ({
+test("microphone cancellation releases late permission, or explains unsupported recording without capture", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -205,12 +205,29 @@ test("a cancelled microphone permission request releases a late-granted real med
       });
   });
   await sampleReady(page);
+  const canRecord = await page.evaluate(
+    () => typeof MediaRecorder !== "undefined",
+  );
   await page
     .getByRole("checkbox", { name: /Allow microphone capture/u })
     .check();
   await page
     .getByRole("button", { name: "Record my repeat", exact: true })
     .click();
+  if (!canRecord) {
+    await expect(
+      page.getByRole("alert", { name: "Shadowing error", exact: true }),
+    ).toContainText("This browser cannot record here");
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { grantMic?: unknown }).grantMic,
+      ),
+    ).toBeUndefined();
+    expect(
+      await page.evaluate(() => localStorage.getItem("lexis.tasks.v1")),
+    ).toBeNull();
+    return;
+  }
   await expect(
     page.getByText(/Waiting for microphone permission/u),
   ).toBeVisible();
@@ -253,6 +270,9 @@ test("local profile removal stops playback and discards a microphone permission 
       });
   });
   await sampleReady(page);
+  const canRecord = await page.evaluate(
+    () => typeof MediaRecorder !== "undefined",
+  );
   await page
     .getByRole("button", { name: "Play recording", exact: true })
     .click();
@@ -262,10 +282,15 @@ test("local profile removal stops playback and discards a microphone permission 
   await page
     .getByRole("button", { name: "Record my repeat", exact: true })
     .click();
-  await expect(
-    page.getByText(/Waiting for microphone permission/u),
-  ).toBeVisible();
-  await page.evaluate(async () => {
+  if (canRecord)
+    await expect(
+      page.getByText(/Waiting for microphone permission/u),
+    ).toBeVisible();
+  else
+    await expect(
+      page.getByRole("alert", { name: "Shadowing error", exact: true }),
+    ).toContainText("This browser cannot record here");
+  await page.evaluate(async (recordingSupported) => {
     localStorage.setItem("lexis.local-purge.v1", "test-removal");
     const pending: Promise<unknown>[] = [];
     window.dispatchEvent(
@@ -276,8 +301,13 @@ test("local profile removal stops playback and discards a microphone permission 
       }),
     );
     await Promise.all(pending);
-    (window as unknown as { grantMic: () => void }).grantMic();
-  });
+    const target = window as unknown as {
+      grantMic: () => void;
+      micTrack: MediaStreamTrack;
+    };
+    if (recordingSupported) target.grantMic();
+    else target.micTrack.stop();
+  }, canRecord);
   await expect
     .poll(() =>
       page.evaluate(
