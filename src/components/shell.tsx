@@ -82,7 +82,12 @@ export function Shell({
         Skip to content
       </a>
       <aside className="sidebar">
-        <Link className="brand" href="/" aria-label="LEXIS home">
+        <Link
+          prefetch={false}
+          className="brand"
+          href="/"
+          aria-label="LEXIS home"
+        >
           <span className="brand-symbol">
             l<span>·</span>
           </span>
@@ -92,6 +97,7 @@ export function Shell({
         <nav className="desktop-nav" aria-label="Main navigation">
           {navigation.map(({ href, label, icon: Icon }) => (
             <Link
+              prefetch={false}
               key={href}
               href={href}
               className={pathname === href ? "nav-item active" : "nav-item"}
@@ -125,6 +131,7 @@ export function Shell({
               <kbd>⌘ K</kbd>
             </button>
             <Link
+              prefetch={false}
               href="/settings"
               className="avatar"
               aria-label="Settings and privacy"
@@ -156,6 +163,7 @@ export function Shell({
       <nav className="bottom-nav" aria-label="Mobile navigation">
         {navigation.map(({ href, label, icon: Icon }) => (
           <Link
+            prefetch={false}
             key={href}
             href={href}
             aria-current={pathname === href ? "page" : undefined}
