@@ -41,6 +41,11 @@ import {
   TASK_STORAGE_KEY,
 } from "@/infrastructure/storage/browser-task-repository";
 import { useLearning } from "./learning-provider";
+import {
+  ASSESSMENT_WITHDRAWAL_POLICIES,
+  applyAssessmentWithdrawals,
+  withdrawnTaskDefinition,
+} from "@/application/assessment-withdrawals";
 
 type Help =
   { kind: "hint"; hintId: string } | { kind: "answer" | "transcript" };
@@ -97,7 +102,13 @@ export function TaskLearningProvider({
     ready: legacyReady,
     error: legacyError,
   } = useLearning();
-  const [state, setState] = useState<TaskLearningState>(emptyTaskLearningState);
+  const [rawState, setState] = useState<TaskLearningState>(
+    emptyTaskLearningState,
+  );
+  const state = useMemo(
+    () => applyAssessmentWithdrawals(rawState, ASSESSMENT_WITHDRAWAL_POLICIES),
+    [rawState],
+  );
   const [ready, setReady] = useState(false);
   const [readable, setReadable] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,11 +154,15 @@ export function TaskLearningProvider({
     <T,>(command: (current: TaskSession) => T): T | null => {
       if (!session.current) return null;
       try {
+        session.current.reconcileAssessmentPolicies(
+          ASSESSMENT_WITHDRAWAL_POLICIES,
+        );
         const result = command(session.current);
         setState(session.current.state!);
         setError(null);
         return result;
       } catch (cause) {
+        if (session.current?.state) setState(session.current.state);
         const message = cause instanceof Error ? cause.message : "";
         setError(
           /another tab|already|different|unassessed|challenged|archived|backup|migration preview|Reload|conflicting|could not be found|predate|past due|limit/.test(
@@ -176,7 +191,14 @@ export function TaskLearningProvider({
     [state, extraExclusions],
   );
   const legacyBlocked = !!legacyError && state.legacyBackups.length > 0;
-  const decisionsBlocked = !readable || legacyBlocked;
+  const assessmentPending = state !== rawState;
+  const decisionsBlocked = !readable || legacyBlocked || assessmentPending;
+  useEffect(() => {
+    if (readable && assessmentPending)
+      run((current) =>
+        current.reconcileAssessmentPolicies(ASSESSMENT_WITHDRAWAL_POLICIES),
+      );
+  }, [readable, assessmentPending, rawState, run]);
   useEffect(() => {
     if (readable && legacyReady && !legacyError && extraExclusions.length)
       run((current) => current.reconcileLegacyDisputes(legacyState));
@@ -222,7 +244,15 @@ export function TaskLearningProvider({
           (legacyBlocked
             ? "Imported review is paused because the original learning history could not be opened. Reload or recover that data before continuing."
             : null),
-        startTask: (task) => run((current) => current.startTask(task)),
+        startTask: (task) => {
+          if (withdrawnTaskDefinition(task, ASSESSMENT_WITHDRAWAL_POLICIES)) {
+            setError(
+              "This assessment was withdrawn because it did not measure the intended meaning. Start the revised task instead.",
+            );
+            return null;
+          }
+          return run((current) => current.startTask(task));
+        },
         saveAnswer: (id, answer) =>
           run((current) => current.saveAnswer(id, answer)),
         submitTask: (id, answer) =>

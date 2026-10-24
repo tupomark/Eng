@@ -8,30 +8,18 @@ export function sampleListeningTask(): TaskDefinition {
   const sense = seedEntries.find((entry) => entry.lexeme.lemma === "linger")!
     .senses[0];
   return {
-    id: "listening:original-coast:location",
-    version: "original-coast-v1",
+    id: "listening:original-coast:linger-meaning",
+    version: "original-coast-task-v2",
     target: { kind: "sense", senseId: sense.id },
     skill: "listening",
     format: "listening-comprehension",
-    promptFamily: "heard-context-location",
-    prompt: "Where do the people stay for a while? Choose the place you heard.",
-    acceptedAnswers: [
-      "by the sea",
-      "near the sea",
-      "at the sea",
-      "the sea",
-      "the seaside",
-      "at the seaside",
-      "by the coast",
-      "on the coast",
-      "the coast",
-      "near the ocean",
-      "by the ocean",
-    ].flatMap((answer) => [answer, `${answer}.`]),
-    partialAnswers: ["outside", "outdoors"],
+    promptFamily: "heard-sense-action",
+    prompt:
+      "In the first sentence, what are the people doing? Choose the action you heard.",
+    acceptedAnswers: ["staying for a while"],
     explanation:
-      "The recording says they linger by the sea. This short closed task observes comprehension of that location in this recording; it is not a general language level or a pronunciation grade.",
-    rubricVersion: "original-listening-location-v1",
+      "The speaker says: We linger by the sea. Here linger means to stay for a while rather than leave immediately. This closed task observes recognition of that specific meaning from this recording; one answer does not establish general listening ability or pronunciation.",
+    rubricVersion: "original-listening-action-meaning-v2",
     evaluator: "deterministic",
     hints: [],
     source: {

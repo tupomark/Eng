@@ -1,3 +1,7 @@
+import {
+  applyAssessmentWithdrawals,
+  type AssessmentWithdrawalPolicy,
+} from "./assessment-withdrawals";
 import { parseLearningState } from "../domain/validation";
 import type { LearningState, Rating } from "../domain/types";
 import {
@@ -205,6 +209,13 @@ export class TaskSession {
       attempts: state.attempts.map((entry) => (entry.id === id ? next : entry)),
     });
     return this.current().attempts.find((entry) => entry.id === id)!;
+  }
+  reconcileAssessmentPolicies(
+    policies: readonly AssessmentWithdrawalPolicy[],
+  ): TaskLearningState {
+    const current = this.current();
+    const next = applyAssessmentWithdrawals(current, policies);
+    return next === current ? current : this.commit(next);
   }
   challenge(observationId: string, reason: string): TaskLearningState {
     const state = this.current();

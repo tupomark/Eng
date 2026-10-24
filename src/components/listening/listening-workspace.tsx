@@ -120,7 +120,12 @@ export function ListeningWorkspace({
   const hasSource = sample || !!asset;
   const task = sampleListeningTask();
   const attempt = session.taskAttemptId
-    ? tasks.state.attempts.find((item) => item.id === session.taskAttemptId)
+    ? tasks.state.attempts.find(
+        (item) =>
+          item.id === session.taskAttemptId &&
+          item.taskId === task.id &&
+          item.taskVersion === task.version,
+      )
     : undefined;
   const answer =
     answerDraft?.attemptId === attempt?.id
@@ -749,10 +754,21 @@ export function ListeningWorkspace({
           >
             <h2>A small listening check.</h2>
             <p className={styles.small}>
-              Play the real sample before starting. This checks one location
-              heard in the recording and only contributes to listening evidence.
-              Repeat material is not a new independent context.
+              Play the real sample before starting. This checks the action
+              meaning heard in the first sentence. Repeat material is not a new
+              independent context.
             </p>
+            {tasks.state.challenges.some(
+              (entry) =>
+                entry.initiator === "assessment-policy" &&
+                entry.policyId === "listening-location-target-mismatch-v1",
+            ) && (
+              <p className={styles.small}>
+                An earlier location question was withdrawn because it did not
+                measure the intended word meaning. Your original answer is
+                preserved and no longer influences learning or its schedule.
+              </p>
+            )}
             {!attempt || attempt.status !== "answering" ? (
               <button
                 className="button secondary"
@@ -782,26 +798,28 @@ export function ListeningWorkspace({
               <>
                 <fieldset className={styles.stack}>
                   <legend>{task.prompt}</legend>
-                  {["by the sea", "in the mountains", "at home"].map(
-                    (choice) => (
-                      <label className={styles.check} key={choice}>
-                        <input
-                          type="radio"
-                          name={`listening-answer-${attempt.id}`}
-                          value={choice}
-                          checked={answer === choice}
-                          onChange={() => {
-                            setAnswerDraft({
-                              attemptId: attempt.id,
-                              value: choice,
-                            });
-                            tasks.saveAnswer(attempt.id, choice);
-                          }}
-                        />
-                        {choice}
-                      </label>
-                    ),
-                  )}
+                  {[
+                    "staying for a while",
+                    "leaving immediately",
+                    "running quickly",
+                  ].map((choice) => (
+                    <label className={styles.check} key={choice}>
+                      <input
+                        type="radio"
+                        name={`listening-answer-${attempt.id}`}
+                        value={choice}
+                        checked={answer === choice}
+                        onChange={() => {
+                          setAnswerDraft({
+                            attemptId: attempt.id,
+                            value: choice,
+                          });
+                          tasks.saveAnswer(attempt.id, choice);
+                        }}
+                      />
+                      {choice}
+                    </label>
+                  ))}
                 </fieldset>
                 <button
                   className="button primary"
@@ -818,10 +836,10 @@ export function ListeningWorkspace({
                   {attempt.evaluation.outcome === "accepted"
                     ? "Your answer fits this recording."
                     : attempt.evaluation.outcome === "partial"
-                      ? "Part of the place is clear; revisit the detail."
+                      ? "Part of the action is clear; revisit the detail."
                       : attempt.evaluation.outcome === "uncertain"
                         ? "This answer is unassessed."
-                        : "Revisit the place in the recording, then try again."}
+                        : "Revisit the action in the recording, then try again."}
                 </p>
                 <p>{attempt.evaluation.explanation}</p>
                 <p className={styles.small}>

@@ -411,8 +411,27 @@ export function parseTaskLearningState(value: unknown): TaskLearningState {
   state.challenges = unique(
     list(input.challenges, 20_000).map((value) => {
       const challenge = record(value);
-      const result = {
-        id: text(challenge.id),
+      if (
+        challenge.initiator !== undefined &&
+        challenge.initiator !== "learner" &&
+        challenge.initiator !== "assessment-policy"
+      )
+        throw new Error("Invalid challenge initiator.");
+      if (
+        (challenge.initiator === "assessment-policy") !==
+        (challenge.policyId !== undefined)
+      )
+        throw new Error(
+          "Assessment policy challenges require their policy identity.",
+        );
+      const result: TaskChallenge = {
+        id: text(challenge.id, 500),
+        ...(challenge.initiator === undefined
+          ? {}
+          : { initiator: challenge.initiator }),
+        ...(challenge.policyId === undefined
+          ? {}
+          : { policyId: text(challenge.policyId, 100) }),
         observationId: text(challenge.observationId, 240),
         challengedAt: taskTimestamp(text(challenge.challengedAt, 40)),
         reason: text(challenge.reason, 1_000),

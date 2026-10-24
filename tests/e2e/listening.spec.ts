@@ -110,7 +110,9 @@ test("hidden and revealed transcript attempts record different assistance throug
   await page
     .getByRole("button", { name: "Start listening check", exact: true })
     .click();
-  await page.getByRole("radio", { name: "by the sea", exact: true }).check();
+  await page
+    .getByRole("radio", { name: "staying for a while", exact: true })
+    .check();
   await page
     .getByRole("button", { name: "Check listening answer", exact: true })
     .click();
@@ -126,7 +128,9 @@ test("hidden and revealed transcript attempts record different assistance throug
   await page
     .getByRole("button", { name: "Start listening check", exact: true })
     .click();
-  await page.getByRole("radio", { name: "by the sea", exact: true }).check();
+  await page
+    .getByRole("radio", { name: "staying for a while", exact: true })
+    .check();
   await page
     .getByRole("button", { name: "Check listening answer", exact: true })
     .click();

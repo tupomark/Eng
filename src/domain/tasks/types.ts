@@ -120,6 +120,9 @@ export interface TaskObservation {
 export interface TaskChallenge {
   id: string;
   observationId: string;
+  /** Missing on legacy challenges means learner initiated. */
+  initiator?: "learner" | "assessment-policy";
+  policyId?: string;
   challengedAt: string;
   reason: string;
 }

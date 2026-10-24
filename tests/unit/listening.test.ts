@@ -139,7 +139,7 @@ describe("listening session and help provenance", () => {
       const submitted = submitTask(
         task,
         attempt,
-        "By the sea.",
+        "staying for a while",
         "2026-10-24T12:01:00.000Z",
       );
       return observationFromTask(
