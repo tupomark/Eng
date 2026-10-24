@@ -1,3 +1,4 @@
+import { assertLocalWritesAllowed } from "./local-write-guard";
 import type { TaskSnapshotRepository } from "@/application/task-session";
 import {
   emptyTaskLearningState,
@@ -25,6 +26,7 @@ export class BrowserTaskRepository implements TaskSnapshotRepository {
     };
   }
   commit(state: TaskLearningState, expected: string | null): string {
+    assertLocalWritesAllowed(this.storage);
     if (this.storage.getItem(TASK_STORAGE_KEY) !== expected)
       throw new Error(
         "Tasks changed in another tab. Reload task data before continuing.",

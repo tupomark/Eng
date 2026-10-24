@@ -1,0 +1,7 @@
+html[data-lexis-motion="reduce"] *,
+html[data-lexis-motion="reduce"] *::before,
+html[data-lexis-motion="reduce"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}

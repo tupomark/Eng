@@ -1,5 +1,9 @@
 "use client";
 import {
+  assertLocalWritesAllowed,
+  suspendLocalWrites,
+} from "@/infrastructure/storage/local-write-guard";
+import {
   createContext,
   useCallback,
   useContext,
@@ -77,6 +81,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const read = () => {
       try {
+        assertLocalWritesAllowed(window.localStorage);
         session.current ??= createSession();
         setState(session.current.load());
         undoableSaves.current.clear();
@@ -93,8 +98,21 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     const sync = (event: StorageEvent) => {
       if (event.key === STORAGE_KEY || event.key === null) read();
     };
+    const purge = () => {
+      suspendLocalWrites();
+      session.current = null;
+      undoableSaves.current.clear();
+      setState(emptyState());
+      setError(
+        "Local profile changes are paused for deletion. Finish in Settings, then start fresh.",
+      );
+    };
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    window.addEventListener("lexis-local-purge", purge);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("lexis-local-purge", purge);
+    };
   }, []);
   const run = useCallback(
     (command: (current: LearningSession) => LearningState) => {
@@ -120,6 +138,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   );
   const reset = () => {
     try {
+      assertLocalWritesAllowed(window.localStorage);
       window.localStorage.removeItem(STORAGE_KEY);
       const next = createSession();
       const loaded = next.load();

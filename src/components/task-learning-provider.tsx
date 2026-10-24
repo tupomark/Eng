@@ -1,4 +1,8 @@
 "use client";
+import {
+  assertLocalWritesAllowed,
+  suspendLocalWrites,
+} from "@/infrastructure/storage/local-write-guard";
 
 import {
   createContext,
@@ -100,6 +104,7 @@ export function TaskLearningProvider({
   const session = useRef<TaskSession | null>(null);
   const reload = useCallback(() => {
     try {
+      assertLocalWritesAllowed(window.localStorage);
       session.current ??= createSession();
       setState(session.current.load());
       setReadable(true);
@@ -118,8 +123,21 @@ export function TaskLearningProvider({
     const sync = (event: StorageEvent) => {
       if (event.key === TASK_STORAGE_KEY || event.key === null) reload();
     };
+    const purge = () => {
+      suspendLocalWrites();
+      session.current = null;
+      setState(emptyTaskLearningState());
+      setReadable(false);
+      setError(
+        "Practice is paused for local profile deletion. Finish in Settings, then start fresh.",
+      );
+    };
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    window.addEventListener("lexis-local-purge", purge);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("lexis-local-purge", purge);
+    };
   }, [reload]);
   const run = useCallback(
     <T,>(command: (current: TaskSession) => T): T | null => {
@@ -254,6 +272,7 @@ export function TaskLearningProvider({
         resetTaskData: (confirmed) => {
           if (!confirmed) return false;
           try {
+            assertLocalWritesAllowed(window.localStorage);
             window.localStorage.removeItem(TASK_STORAGE_KEY);
             const next = createSession();
             const loaded = next.load();
