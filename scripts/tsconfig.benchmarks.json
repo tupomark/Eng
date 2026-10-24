@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "types": ["node"], "incremental": false },
+  "include": ["measure-local-paths.ts"],
+  "exclude": ["../node_modules"]
+}
