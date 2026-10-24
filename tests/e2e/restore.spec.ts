@@ -26,11 +26,13 @@ test("a learning backup previews, restores and repeats without duplicating origi
     ],
   };
   await page.goto("/core/restore");
-  await page.getByLabel("Choose learning backup").setInputFiles({
-    name: "history.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(backup)),
-  });
+  await page
+    .getByRole("button", { name: "Choose learning backup", exact: true })
+    .setInputFiles({
+      name: "history.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(backup)),
+    });
   await expect(
     page.getByRole("heading", { name: "Preview", exact: true }),
   ).toBeVisible();
@@ -50,11 +52,13 @@ test("a learning backup previews, restores and repeats without duplicating origi
       JSON.parse(localStorage.getItem("lexis.learning.v1")!),
     ),
   ).toEqual(backup);
-  await page.getByLabel("Choose learning backup").setInputFiles({
-    name: "history-again.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(backup)),
-  });
+  await page
+    .getByRole("button", { name: "Choose learning backup", exact: true })
+    .setInputFiles({
+      name: "history-again.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(backup)),
+    });
   await expect(
     page.getByText(
       "0 new meanings · 0 new observations · 1 already present observations.",
@@ -75,11 +79,13 @@ test("an invalid restore preserves existing raw bytes", async ({ page }) => {
   const before = await page.evaluate(() =>
     localStorage.getItem("lexis.learning.v1"),
   );
-  await page.getByLabel("Choose learning backup").setInputFiles({
-    name: "broken.json",
-    mimeType: "application/json",
-    buffer: Buffer.from("{broken"),
-  });
+  await page
+    .getByRole("button", { name: "Choose learning backup", exact: true })
+    .setInputFiles({
+      name: "broken.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{broken"),
+    });
   await expect(
     page.getByRole("alert").filter({ hasText: "not a valid supported" }),
   ).toBeVisible();

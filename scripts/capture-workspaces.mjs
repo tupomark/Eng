@@ -24,6 +24,7 @@ const hasUncommittedChanges = Boolean(
 const manifest = {
   generatedAt: new Date().toISOString(),
   sourceHead,
+  builtSourceHead: process.env.LEXIS_CAPTURE_BUILD_SHA ?? sourceHead,
   sourceAnchor,
   hasUncommittedChanges,
   origin,
@@ -170,7 +171,7 @@ for (const configuration of engineConfigurations) {
     // Import through the UI; only the original repository fixture is used.
     await open("/library/import");
     await page
-      .getByLabel("Choose a file")
+      .getByRole("button", { name: "Choose a file", exact: true })
       .setInputFiles(resolve("tests/fixtures/materials/original-reading.txt"));
     await page
       .getByLabel("Title / source name")
@@ -219,7 +220,7 @@ for (const configuration of engineConfigurations) {
       .getByRole("button", { name: "Vocabulary list", exact: true })
       .click();
     await page
-      .getByLabel("Choose a file")
+      .getByRole("button", { name: "Choose a file", exact: true })
       .setInputFiles(
         resolve("tests/fixtures/materials/original-vocabulary.xlsx"),
       );

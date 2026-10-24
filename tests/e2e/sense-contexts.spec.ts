@@ -32,11 +32,13 @@ test("two source contexts for one meaning persist/search/export/restore without 
   const first = "We linger by the sea.";
   const second = "We linger by the quiet river.";
   await page.goto("/library/import");
-  await page.getByLabel("Choose a file").setInputFiles({
-    name: "two-original-contexts.txt",
-    mimeType: "text/plain",
-    buffer: Buffer.from(first + "\n\n" + second),
-  });
+  await page
+    .getByRole("button", { name: "Choose a file", exact: true })
+    .setInputFiles({
+      name: "two-original-contexts.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from(first + "\n\n" + second),
+    });
   await page
     .getByRole("button", { name: "Preview import", exact: true })
     .click();

@@ -493,7 +493,7 @@ export function WritingStudio({
   );
   const diff = preview ? writingDifference(preview.text, editor) : null;
   return (
-    <div className={styles.workspace}>
+    <main className={styles.workspace}>
       <header className={styles.header}>
         <Link
           href="/learn"
@@ -1079,6 +1079,6 @@ export function WritingStudio({
           </div>
         </form>
       </Modal>
-    </div>
+    </main>
   );
 }

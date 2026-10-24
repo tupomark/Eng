@@ -12,7 +12,7 @@ test("opt-in public shell reopens a private local text and dictionary with the n
     ),
   ).toBe(0);
   await page
-    .getByLabel("Choose a file")
+    .getByRole("button", { name: "Choose a file", exact: true })
     .setInputFiles(resolve("tests/fixtures/materials/original-reading.txt"));
   await page.getByLabel("Title / source name").fill("My private offline coast");
   await page

@@ -8,7 +8,7 @@ test("own TXT survives preview, bookmark, Dictionary return and reload", async (
 }) => {
   await page.goto("/library/import");
   await page
-    .getByLabel("Choose a file")
+    .getByRole("button", { name: "Choose a file", exact: true })
     .setInputFiles(fixture("original-reading.txt"));
   await page.getByLabel("Title / source name").fill("My coast reading");
   await page
@@ -71,7 +71,7 @@ test("own TXT survives preview, bookmark, Dictionary return and reload", async (
 test("DRM-free EPUB chapters and structural place reopen", async ({ page }) => {
   await page.goto("/library/import");
   await page
-    .getByLabel("Choose a file")
+    .getByRole("button", { name: "Choose a file", exact: true })
     .setInputFiles(fixture("original-book.epub"));
   await page
     .getByRole("button", { name: "Preview import", exact: true })
@@ -123,11 +123,13 @@ test("1,001 vocabulary rows preview in Inbox without creating learning debt", as
         ? "linger,задерживаться,We linger by the sea.,My notes,verb"
         : `word-${index},перевод-${index},Context ${index},My notes,noun`,
     ).join("\n");
-  await page.getByLabel("Choose a file").setInputFiles({
-    name: "large-vocabulary.csv",
-    mimeType: "text/csv",
-    buffer: Buffer.from(text),
-  });
+  await page
+    .getByRole("button", { name: "Choose a file", exact: true })
+    .setInputFiles({
+      name: "large-vocabulary.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(text),
+    });
   await page
     .getByRole("button", { name: "Preview import", exact: true })
     .click();
@@ -203,7 +205,7 @@ test("real XLSX values import and corrupt files leave saved data intact", async 
     .getByRole("button", { name: "Vocabulary list", exact: true })
     .click();
   await page
-    .getByLabel("Choose a file")
+    .getByRole("button", { name: "Choose a file", exact: true })
     .setInputFiles(fixture("original-vocabulary.xlsx"));
   await page
     .getByRole("button", { name: "Preview import", exact: true })
@@ -220,12 +222,14 @@ test("real XLSX values import and corrupt files leave saved data intact", async 
   const previous = await page.evaluate(() =>
     localStorage.getItem("lexis.materials.v1"),
   );
-  await page.getByLabel("Choose a file").setInputFiles({
-    name: "broken.xlsx",
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    buffer: Buffer.from("not a zip"),
-  });
+  await page
+    .getByRole("button", { name: "Choose a file", exact: true })
+    .setInputFiles({
+      name: "broken.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from("not a zip"),
+    });
   await page
     .getByRole("button", { name: "Preview import", exact: true })
     .click();

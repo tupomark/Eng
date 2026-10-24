@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 
 async function createDraft(page: Page, title = "A private note") {
   await page.goto("/writing");
+  await expect(page.getByRole("main")).toBeVisible();
   await page
     .getByRole("button", { name: "Create your first draft", exact: true })
     .click();
