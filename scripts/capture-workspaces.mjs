@@ -93,15 +93,15 @@ for (const configuration of engineConfigurations) {
       await page.goto(origin + path, { waitUntil: "load" });
       await expect(page.locator("main").first()).toBeVisible();
     };
-    const capture = async (name, detail) => {
+    const capture = async (name, detail, resetScroll = true) => {
       step = name;
-      await page.evaluate(async () => {
+      await page.evaluate(async (reset) => {
         await document.fonts.ready;
         await new Promise((done) =>
           requestAnimationFrame(() => requestAnimationFrame(done)),
         );
-        window.scrollTo(0, 0);
-      });
+        if (reset) window.scrollTo(0, 0);
+      }, resetScroll);
       const filename = `${configuration.name}-${name}.png`;
       await page.screenshot({
         path: resolve(destination, filename),
@@ -306,7 +306,8 @@ for (const configuration of engineConfigurations) {
     ).toBeVisible();
     await capture(
       "writing-draft",
-      "Actual editor input/autosave, no invented writing proficiency or AI correction.",
+      "Actual editor input/autosave at its focused scroll position, no invented writing proficiency or AI correction.",
+      false,
     );
     await open("/grammar");
     await capture("grammar", "Authored concept/rule and common task practice.");

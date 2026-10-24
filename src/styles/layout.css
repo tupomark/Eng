@@ -2404,3 +2404,29 @@ details .muted {
     font-size: 10px;
   }
 }
+
+/* Native disclosure markers can become colored emoji in WebKit. Keep a quiet
+   decorative chevron while preserving native details keyboard/ARIA behavior. */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary::marker {
+  content: "";
+}
+summary::before {
+  content: "";
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin-inline-end: 0.7em;
+  border-inline-end: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  vertical-align: 0.12em;
+}
+details[open] > summary::before {
+  transform: rotate(45deg);
+}
