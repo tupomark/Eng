@@ -65,7 +65,9 @@ test("invalid Auth callback cannot redirect to an external destination", async (
 }) => {
   await page.goto("/auth/callback?next=https://unrelated.example");
   await expect(page).toHaveURL(/\/account\?notice=callback-incomplete$/);
-  await expect(page.getByRole("alert")).toContainText(
-    "sign-in link could not be completed",
-  );
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "sign-in link could not be completed" }),
+  ).toContainText("sign-in link could not be completed");
 });
