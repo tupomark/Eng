@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
+import { LOCAL_PURGE_MARKER } from "@/infrastructure/storage/preferences";
 import { assertLocalWritesAllowed } from "@/infrastructure/storage/local-write-guard";
 
 interface InstallPrompt extends Event {
@@ -15,6 +16,7 @@ interface InstallPrompt extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 interface OfflineContext {
+  blocked: boolean;
   ready: boolean;
   busy: boolean;
   offline: boolean;
@@ -27,6 +29,7 @@ interface OfflineContext {
 }
 const Context = createContext<OfflineContext | null>(null);
 export function PwaProvider({ children }: { children: React.ReactNode }) {
+  const [blocked, setBlocked] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(false);
@@ -163,7 +166,11 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
       setBusy(false);
       setUpdate(false);
       setInstallable(false);
-      // A registration already in flight must finish its unregister before cache deletion.
+      setBlocked(true);
+      setError(
+        "Offline changes are paused for local profile deletion. Finish in Settings, then start a fresh profile.",
+      );
+      // Drain registration before the deletion coordinator enumerates and stops workers.
       (
         event as CustomEvent<{ register?: (promise: Promise<unknown>) => void }>
       ).detail?.register?.(activeSetup.current ?? Promise.resolve());
@@ -171,6 +178,10 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       onlineChanged();
       try {
+        if (localStorage.getItem(LOCAL_PURGE_MARKER)) {
+          purge(new Event("lexis-local-purge"));
+          return;
+        }
         if (localStorage.getItem("lexis.offline.enabled") === "true")
           await enable();
       } catch {
@@ -202,6 +213,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   return (
     <Context.Provider
       value={{
+        blocked,
         ready,
         busy,
         offline,
@@ -251,7 +263,7 @@ export function OfflineSettings() {
       <div className="device-actions">
         <button
           className="button secondary"
-          disabled={value.busy}
+          disabled={value.busy || value.blocked}
           onClick={() => void value.enable()}
         >
           {value.busy

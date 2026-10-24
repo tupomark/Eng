@@ -121,12 +121,12 @@ test("confirmed profile removal drains the active offline worker and cannot recr
   ).toBe(0);
   expect(await page.evaluate(() => caches.keys())).toEqual([]);
   // The still-open page cannot reinstall or refill a worker after deletion.
-  await page
-    .getByRole("button", { name: "Enable offline workspace", exact: true })
-    .click();
+  await expect(
+    page.getByRole("button", { name: "Enable offline workspace", exact: true }),
+  ).toBeDisabled();
   await expect(
     page.getByRole("region", { name: "Offline settings" }).getByRole("alert"),
-  ).toBeVisible();
+  ).toContainText("paused for local profile deletion");
   expect(
     await page.evaluate(() =>
       navigator.serviceWorker.getRegistrations().then((items) => items.length),
