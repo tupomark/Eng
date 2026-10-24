@@ -81,3 +81,61 @@ test("opt-in public shell reopens a private local text and dictionary with the n
     ),
   ).toBe("My private offline coast");
 });
+
+test("confirmed profile removal drains the active offline worker and cannot recreate its cache", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+  await page
+    .getByRole("button", { name: "Enable offline workspace", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Offline workspace prepared" }),
+  ).toBeVisible({ timeout: 20000 });
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+  const removal = page.getByRole("region", {
+    name: "Remove local profile",
+    exact: true,
+  });
+  await removal
+    .getByRole("button", { name: "Refresh deletion preview" })
+    .click();
+  await removal.getByRole("checkbox").check();
+  await removal
+    .getByLabel("Type DELETE LOCAL PROFILE", { exact: true })
+    .fill("DELETE LOCAL PROFILE");
+  await removal
+    .getByRole("button", {
+      name: "Permanently delete local profile",
+      exact: true,
+    })
+    .click();
+  await expect(removal.getByRole("status")).toContainText(
+    "inspected local stores have been removed",
+    { timeout: 20000 },
+  );
+  expect(
+    await page.evaluate(() =>
+      navigator.serviceWorker.getRegistrations().then((items) => items.length),
+    ),
+  ).toBe(0);
+  expect(await page.evaluate(() => caches.keys())).toEqual([]);
+  // The still-open page cannot reinstall or refill a worker after deletion.
+  await page
+    .getByRole("button", { name: "Enable offline workspace", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Offline settings" }).getByRole("alert"),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      navigator.serviceWorker.getRegistrations().then((items) => items.length),
+    ),
+  ).toBe(0);
+  expect(await page.evaluate(() => caches.keys())).toEqual([]);
+  expect(
+    await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) => key.startsWith("lexis.")),
+    ),
+  ).toEqual(["lexis.local-purge.v1"]);
+});

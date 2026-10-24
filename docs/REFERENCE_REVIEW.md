@@ -27,3 +27,19 @@
 ## Продолжение v2 — 24 октября 2026
 
 Все пять реальных WebP и overview повторно открыты перед визуальными изменениями v2; тринадцать исключённых оригиналов не считаются доступными. Новые functional workspaces продолжают тот же warm graphite/espresso/sand и matte fogged material, без подстановки картинок/новой неоновой концепции. Эта запись не является завершённой сверкой новых экранов: root получает актуальные production screenshots, фиксирует source SHA/viewports/long states и реальные расхождения. Снимки22.10 выше — исторические. Physical iPhone и финальное одобрение владельца остаются отдельными proof gates.
+
+### Воспроизводимый capture v2
+
+Подготовлен `scripts/capture-workspaces.mjs`; он запускается **после** browser tests против уже работающей production-сборки на `http://127.0.0.1:3000`. Скрипт не запускает сервер и не должен выполняться одновременно с rebuild. В этой документационной задаче браузеры не запускались и снимки ещё не объявляются полученными.
+
+```sh
+node scripts/capture-workspaces.mjs
+```
+
+Source anchor — `a3db700`; фактический `git HEAD`, dirty flag, browser versions, source URL, viewport/device scale и исход каждого capture записываются в `docs/screenshots/2026-10-24-v2/capture-manifest.json` при реальном запуске. При local extracted browser dependencies применяются те же environment paths, что и для e2e. Секретные значения и raw DOM не выводятся в diagnostics.
+
+Матрица: Chromium desktop **1440×1050 CSS px**, WebKit `iPhone 13` **390×844 CSS px**, обе с reduced motion. Создаются свежие изолированные contexts, original TXT/XLSX fixtures импортируются через настоящий UI, Writing содержит авторский capture-текст, а наблюдение появляется только после реального закрытого recall задания и явного user rating. Это воспроизводимая test data, не личная история владельца и не искусственная оценка мастерства.
+
+Capture охватывает Home first-use/resume, Library empty/material, Import start/preview, Inbox empty/imported, Learn, practice draft/feedback/FSRS, sample/private Reader, Dictionary Quick/Full/Deep/unavailable, Tutor chat unavailable, шесть подписанных Voice preview states, Core/Observatory empty/populated/Network, Writing, Grammar, Goals, Settings, offline before setup, **настоящий network-disabled shell и private Reader**. Offline capture сначала требует реальной opt-in подготовки service worker и лишь затем отключает сеть контекста. AI не вызывается, microphone permission не запрашивается, Voice states остаются явно simulated.
+
+Снимки viewport, не фиктивные полноэкранные композиции. Скрипт записывает горизонтальное переполнение и page-error category; failure даёт ненулевой exit code, не скрытый «успех». Эти checks не заменяют ручную визуальную оценку, composited contrast, длинный RU/IPA/чат/большие списки, 200% zoom, screen reader, keyboard/scroll/native iPhone gestures, hardware audio/heat/memory и финальное одобрение владельца. Реальные расхождения нужно зафиксировать после открытия полученных PNG, а не предполагать по наличию скрипта.
