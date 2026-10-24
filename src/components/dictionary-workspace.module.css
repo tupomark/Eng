@@ -3,10 +3,12 @@
   margin-inline: auto;
 }
 .header {
-  margin: 25px 0 32px;
+  margin: 18px 0 22px;
 }
 .header h1 {
-  margin-top: 16px;
+  margin-top: 8px;
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1.2;
 }
 .search {
   margin: 24px 0 16px;
@@ -255,5 +257,40 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace * {
     scroll-behavior: auto;
+  }
+}
+
+.coverage {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.coverage summary,
+.context summary {
+  min-height: 44px;
+  display: list-item;
+  padding-block: 10px;
+  cursor: pointer;
+}
+.context {
+  margin-block: 14px;
+  padding-block: 4px;
+}
+@media (max-width: 600px) {
+  .header {
+    margin-block: 14px 18px;
+  }
+  .header :global(.eyebrow) {
+    font-size: 10px;
+    margin-bottom: 0;
+  }
+  .search {
+    margin-block: 16px 8px;
+  }
+  .entry {
+    margin-top: 16px;
+  }
+  .context {
+    padding-block: 4px;
   }
 }

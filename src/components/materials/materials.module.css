@@ -193,3 +193,55 @@
 .header h1 {
   font-size: clamp(34px, 5vw, 50px);
 }
+
+.documentHeader :global(.eyebrow) {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.documentHeader > p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.readingHelp {
+  margin: 12px 0;
+  font-family: var(--font-sans);
+}
+.readingHelp summary {
+  min-height: 44px;
+  display: list-item;
+  padding-block: 10px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.documentHeader .readingHelp p {
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+@media (max-width: 700px) {
+  .toolbar :global(.reader-brand) {
+    display: none;
+  }
+  .article {
+    margin-block: 20px;
+  }
+  .documentHeader h1 {
+    font-size: 27px;
+    line-height: 1.2;
+    margin: 12px 0;
+  }
+  .documentHeader :global(.eyebrow) {
+    margin-bottom: 8px;
+  }
+  .documentHeader > details {
+    margin-block: 8px;
+  }
+  .article h2 {
+    font-size: 23px;
+    margin-bottom: 18px;
+  }
+}

@@ -359,7 +359,7 @@ export function DocumentReader({ documentId }: { documentId: string }) {
           </button>
         </div>
       </header>
-      <div className={styles.article}>
+      <div className={`${styles.article} ${styles.documentHeader}`}>
         <p className="eyebrow">
           <BookOpen size={14} /> YOUR PRIVATE DOCUMENT · ON THIS DEVICE
         </p>
@@ -370,11 +370,14 @@ export function DocumentReader({ documentId }: { documentId: string }) {
             available.
           </p>
         )}
-        <p className={styles.small}>
-          Tap a word, or select an expression and choose Look up selection. The
-          original text stays on this device; Dictionary uses a short excerpt in
-          this tab.
-        </p>
+        <details className={styles.readingHelp}>
+          <summary>Reading help &amp; privacy</summary>
+          <p>
+            Tap a word, or select an expression and choose Look up selection.
+            The original text stays on this device; Dictionary uses a short
+            excerpt in this tab.
+          </p>
+        </details>
         {(materials.error || options.error || lookupError) && (
           <p className="status-banner error" role="alert">
             {lookupError || materials.error || options.error}

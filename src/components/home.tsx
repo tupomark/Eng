@@ -6,6 +6,7 @@ import { Shell } from "./shell";
 import { Orb } from "./orb";
 import { useLearning } from "./learning-provider";
 import { useMaterials } from "./materials/use-materials";
+import styles from "./home.module.css";
 
 export function Home() {
   const { state, ready } = useLearning();
@@ -27,7 +28,7 @@ export function Home() {
   const section = Math.min(3, Math.round(state.readerProgress / (100 / 3)) + 1);
   return (
     <Shell title="Home">
-      <div className="home-heading">
+      <div className={`home-heading ${styles.heading}`}>
         <div>
           <p className="eyebrow">YOUR PERSONAL ENGLISH SPACE</p>
           <h1>
@@ -41,7 +42,7 @@ export function Home() {
         </div>
       </div>
       <section
-        className="home-grid balanced-home"
+        className={`home-grid balanced-home ${styles.overview}`}
         aria-label="Your learning overview"
       >
         <article className="continue-card glass-panel">

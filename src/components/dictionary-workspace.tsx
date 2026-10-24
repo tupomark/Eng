@@ -138,18 +138,8 @@ export function DictionaryWorkspace({
           <ArrowLeft size={16} /> Return to your source
         </Link>
         <header className={styles.header}>
-          <p className="eyebrow">
-            INTELLIGENT DICTIONARY · LOCAL EDITORIAL SAMPLE
-          </p>
-          <h1>
-            A meaning,
-            <br />
-            <span>in context.</span>
-          </h1>
-          <p className="intro-copy">
-            Explore the available senses, then choose the one you intend to
-            study.
-          </p>
+          <p className="eyebrow">MEANINGS IN CONTEXT</p>
+          <h1>Dictionary</h1>
         </header>
         <form
           className={styles.search}
@@ -179,11 +169,6 @@ export function DictionaryWorkspace({
             </button>
           </div>
         </form>
-        <p className={styles.note}>
-          Eight authored entries are available offline. Live dictionary coverage
-          and licensed audio are awaiting configuration; an absent result does
-          not mean the word is invalid.
-        </p>
         {contextError && (
           <p role="alert" className="status-banner error">
             {contextError}
@@ -194,15 +179,17 @@ export function DictionaryWorkspace({
             className={styles.context}
             aria-label="Original lookup context"
           >
-            <p className="eyebrow">Your selected passage</p>
-            <blockquote>{context.excerpt}</blockquote>
-            {context.source && (
-              <p className={styles.note}>
-                Source version {context.source.documentVersion} · chapter{" "}
-                {context.source.chapterId} · paragraph{" "}
-                {context.source.paragraphIndex + 1}
-              </p>
-            )}
+            <details>
+              <summary>Your selected passage</summary>
+              <blockquote>{context.excerpt}</blockquote>
+              {context.source && (
+                <p className={styles.note}>
+                  Source version {context.source.documentVersion} · chapter{" "}
+                  {context.source.chapterId} · paragraph{" "}
+                  {context.source.paragraphIndex + 1}
+                </p>
+              )}
+            </details>
           </aside>
         )}
         {!result ? (
@@ -324,6 +311,13 @@ export function DictionaryWorkspace({
             </button>
           </section>
         )}
+        <details className={styles.coverage}>
+          <summary>Eight authored entries are available offline.</summary>
+          <p className={styles.note}>
+            Live dictionary coverage and licensed audio are awaiting
+            configuration; an absent result does not mean the word is invalid.
+          </p>
+        </details>
         <SenseContextBackup />
       </div>
     </Shell>
