@@ -13,6 +13,11 @@ import {
 } from "@/infrastructure/dictionary/editorial-depth";
 import { useLearning } from "./learning-provider";
 import styles from "./dictionary-workspace.module.css";
+import {
+  senseContextIdentity,
+  type SenseContextSource,
+} from "@/domain/sense-contexts";
+import { SavedPassageList, useSenseContexts } from "./sense-contexts";
 
 export function DictionaryProvenance({
   source,
@@ -91,17 +96,23 @@ export function DictionarySelectedMeaning({
   selectedSenseId,
   level,
   context,
+  surface,
+  source,
   onSelect,
 }: {
   entry: LookupDictionaryEntry;
   selectedSenseId: string;
   level: "full" | "deep";
   context: string;
+  surface: string;
+  source?: SenseContextSource;
   onSelect: (id: string) => void;
 }) {
   const { state, ready, error, save, undoSave, canUndoSave } = useLearning();
   const [freshSavedId, setFreshSavedId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const passages = useSenseContexts();
+  const [freshContextId, setFreshContextId] = useState<string | null>(null);
   const sense = entry.senses.find((item) => item.id === selectedSenseId);
   if (!sense)
     return (
@@ -115,6 +126,21 @@ export function DictionarySelectedMeaning({
       ? EDITORIAL_SENSE_DEPTH[sense.id]
       : undefined;
   const alreadySaved = state.saved.some((item) => item.senseId === sense.id);
+  const contextInput = {
+    senseId: sense.id,
+    surface,
+    excerpt: context,
+    ...(source ? { source } : {}),
+  };
+  const currentContextSaved =
+    !!context.trim() &&
+    passages.state.contexts.some(
+      (item) =>
+        senseContextIdentity(item) === senseContextIdentity(contextInput),
+    );
+  const savedPassages = passages.state.contexts.filter(
+    (item) => item.senseId === sense.id,
+  );
   return (
     <section className={styles.detail} aria-label="Selected meaning details">
       <h2>{level === "deep" ? "Deep Dive" : "A closer look"}</h2>
@@ -193,6 +219,11 @@ export function DictionarySelectedMeaning({
         </p>
       </section>
       <div className={styles.actions}>
+        {passages.error && (
+          <p className="status-banner error" role="alert">
+            {passages.error}
+          </p>
+        )}
         {error && (
           <p className="status-banner error" role="alert">
             {error}
@@ -200,19 +231,41 @@ export function DictionarySelectedMeaning({
         )}
         <button
           className="button primary"
-          disabled={!ready || alreadySaved}
+          disabled={
+            !ready ||
+            (alreadySaved && (!context.trim() || currentContextSaved)) ||
+            (!!context.trim() && (!passages.ready || !!passages.error))
+          }
           onClick={() => {
+            if (alreadySaved) {
+              if (passages.save(contextInput))
+                setNotice(
+                  "Source context saved on this device. Original learning history was not changed.",
+                );
+              return;
+            }
             if (save(sense.id, context)) {
               setFreshSavedId(sense.id);
+              const passage = context.trim()
+                ? passages.save(contextInput)
+                : null;
+              if (passage?.added) setFreshContextId(passage.id);
               setNotice(
-                "Meaning saved on this device. Saving shows learning intent, not knowledge.",
+                context.trim() && !passage
+                  ? "Meaning saved on this device, but the separate source passage could not be saved. Keep a copy and retry; no knowledge was recorded."
+                  : "Meaning saved on this device. Saving shows learning intent, not knowledge.",
               );
             }
           }}
         >
           {alreadySaved ? (
             <>
-              <Check size={16} /> Already in your collection
+              <Check size={16} />{" "}
+              {context.trim()
+                ? currentContextSaved
+                  ? "Source context saved"
+                  : "Save this source context"
+                : "Already in your collection"}
             </>
           ) : (
             <>
@@ -239,8 +292,14 @@ export function DictionarySelectedMeaning({
             onClick={() => {
               if (undoSave(sense.id)) {
                 setFreshSavedId(null);
+                const removed = freshContextId
+                  ? passages.remove(freshContextId)
+                  : true;
+                setFreshContextId(null);
                 setNotice(
-                  "This fresh save was undone. Existing history was preserved.",
+                  removed
+                    ? "This fresh save was undone. Existing history was preserved."
+                    : "The learning intent was undone; its separate passage could not be removed. Existing history was preserved. Retry passage removal below.",
                 );
               }
             }}
@@ -256,6 +315,36 @@ export function DictionarySelectedMeaning({
           </p>
         )}
       </div>
+      <SavedPassageList items={savedPassages} />
+      {!!savedPassages.length && (
+        <details>
+          <summary>Manage this meaning’s saved passages</summary>
+          <p className={styles.note}>
+            Removing an additional source record does not remove the original
+            excerpt in learning history, the meaning or practice evidence.
+            Deleting a book keeps deliberately saved learning excerpts. Use
+            Settings for confirmed removal of the complete local profile.
+          </p>
+          {savedPassages.map((item) => (
+            <div key={item.id}>
+              <blockquote>{item.excerpt}</blockquote>
+              <button
+                className="button ghost"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Remove this additional source record? The original learning excerpt, meaning and evidence are kept. Complete local profile removal is available in Settings.",
+                    )
+                  )
+                    passages.remove(item.id);
+                }}
+              >
+                Remove this saved passage
+              </button>
+            </div>
+          ))}
+        </details>
+      )}
     </section>
   );
 }

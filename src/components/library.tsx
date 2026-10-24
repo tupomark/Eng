@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Search,
@@ -12,10 +12,23 @@ import { seedEntries } from "@/infrastructure/dictionary/seed";
 import { Shell } from "./shell";
 import { useLearning } from "./learning-provider";
 import { MaterialLibrary } from "./materials/material-library";
+import { SavedPassageList, useSenseContexts } from "./sense-contexts";
+import type { SavedSenseContext } from "@/domain/sense-contexts";
 
 export function Library({ initialQuery = "" }: { initialQuery?: string }) {
   const { state, ready } = useLearning();
   const [query, setQuery] = useState(initialQuery);
+  const passages = useSenseContexts();
+  const passageRecords = passages.state.contexts;
+  const contextsBySense = useMemo(() => {
+    const grouped = new Map<string, SavedSenseContext[]>();
+    for (const item of passageRecords) {
+      const list = grouped.get(item.senseId) ?? [];
+      list.push(item);
+      grouped.set(item.senseId, list);
+    }
+    return grouped;
+  }, [passageRecords]);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const saved = state.saved
     .map((item) => {
@@ -32,6 +45,7 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
         entry?.lexeme.lemma,
         sense?.definition,
         sense?.translation,
+        ...(contextsBySense.get(senseId) ?? []).map((item) => item.excerpt),
       ]
         .filter(Boolean)
         .join(" ")
@@ -67,6 +81,12 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
         </Link>
       </section>
       <section>
+        {passages.error && (
+          <p role="alert">
+            {passages.error} Original saved meanings remain below; recover
+            separate passages in Dictionary.
+          </p>
+        )}
         <div className="section-heading library-heading">
           <h2>
             Your meanings{" "}
@@ -82,7 +102,7 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
             />
           </label>
         </div>
-        {!ready ? (
+        {!ready || !passages.ready ? (
           <p role="status">Opening your collection…</p>
         ) : saved.length ? (
           <div className="meaning-grid">
@@ -116,6 +136,7 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
                   </>
                 )}
                 <blockquote>{context}</blockquote>
+                <SavedPassageList items={contextsBySense.get(senseId) ?? []} />
                 {sense ? (
                   <details>
                     <summary>Explore this meaning</summary>

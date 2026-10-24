@@ -19,6 +19,7 @@ import {
 } from "./dictionary-entry";
 import { Shell } from "./shell";
 import styles from "./dictionary-workspace.module.css";
+import { SenseContextBackup } from "./sense-contexts";
 
 const dictionary = new EditorialDictionaryLookup();
 export function DictionaryWorkspace({
@@ -259,6 +260,8 @@ export function DictionaryWorkspace({
               selectedSenseId={selectedSenseId}
               level={level}
               context={context?.excerpt ?? ""}
+              surface={query.trim() || entry.lexeme.lemma}
+              source={context?.source}
               onSelect={selectSense}
             />
           </article>
@@ -321,6 +324,7 @@ export function DictionaryWorkspace({
             </button>
           </section>
         )}
+        <SenseContextBackup />
       </div>
     </Shell>
   );
