@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Download, Info, RotateCcw, Check } from "lucide-react";
-import { SKILLS, deriveProgress, dueSenses, SCHEDULER_VERSION } from "@/domain";
+import { SKILLS, SCHEDULER_VERSION } from "@/domain";
+import { useReviewOverview } from "./use-review-overview";
 import { seedEntries } from "@/infrastructure/dictionary/seed";
 import { STORAGE_KEY } from "@/infrastructure/storage/browser-repository";
 import { Shell } from "./shell";
@@ -18,10 +19,10 @@ const labels = {
   speaking: "Speaking",
 };
 export function Core() {
-  const { state, dispute, reset, ready, now } = useLearning();
+  const { state, dispute, reset, ready, progress } = useLearning();
+  const { total: due, fsrsDue } = useReviewOverview();
   const [resetOpen, setResetOpen] = useState(false);
   const [exportError, setExportError] = useState("");
-  const progress = deriveProgress(state);
   function exportBackup() {
     try {
       const raw =
@@ -59,7 +60,7 @@ export function Core() {
           <Orb />
         </div>
         <div>
-          <p className="eyebrow">FIVE SKILLS. ONE CONNECTED PICTURE.</p>
+          <p className="eyebrow">YOUR ORIGINAL LEARNING TRAIL</p>
           <h2>
             {state.saved.length
               ? `${state.saved.length} meanings taking shape.`
@@ -74,10 +75,24 @@ export function Core() {
             <ArrowUpRight size={14} />
           </Link>
           <p className="muted" aria-label="Review due count">
-            {dueSenses(state, now).length} meanings due for review
+            {due} {fsrsDue.length ? "objectives" : "meanings"} due for review
           </p>
         </div>
       </section>
+      <nav aria-label="Knowledge workspaces" className="device-actions">
+        <Link href="/core/observatory" className="button secondary">
+          Open Knowledge Observatory
+        </Link>
+        <Link href="/learn/practice" className="text-link">
+          Task evidence and FSRS
+        </Link>
+        <Link href="/core/network" className="text-link">
+          Meaning connections
+        </Link>
+        <Link href="/goals" className="text-link">
+          Your goals
+        </Link>
+      </nav>
       <section className="skills-panel">
         <div className="section-heading">
           <h2>What the evidence says</h2>
@@ -182,11 +197,14 @@ export function Core() {
           <p className="muted">
             No account or cloud backup is connected. Browser storage can be
             cleared by the browser. Export a copy before resetting or changing
-            devices. Backup import is not available yet.
+            devices. Learning v1 backups can be previewed and merged below.
           </p>
           {exportError && <p role="alert">{exportError}</p>}
         </div>
         <div className="device-actions">
+          <Link className="button secondary" href="/core/restore">
+            Restore a learning backup
+          </Link>
           <button
             className="button secondary"
             onClick={exportBackup}
@@ -200,18 +218,20 @@ export function Core() {
             onClick={() => setResetOpen(true)}
             disabled={!ready}
           >
-            Reset this device
+            Reset original learning history
           </button>
         </div>
       </section>
       <Modal
         open={resetOpen}
         onClose={() => setResetOpen(false)}
-        title="Reset this device?"
+        title="Reset original learning history?"
       >
         <p>
-          This removes your saved meanings, ratings and reading position from
-          this browser. Export a backup first if you want to keep a copy.
+          This removes the original v1 saved meanings, self-ratings and sample
+          reading position. Separate practice history, migration backups, books
+          and writing drafts remain in their own workspaces. Export a backup
+          first if you want to keep this copy.
         </p>
         <div className="modal-actions">
           <button
