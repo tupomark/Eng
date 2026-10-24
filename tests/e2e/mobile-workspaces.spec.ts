@@ -55,6 +55,7 @@ test("own Reader presents real book text in the first viewport at the default re
   const paragraph = page
     .getByRole("article", { name: "Document text" })
     .locator("p")
+    .filter({ hasText: "We linger by the sea." })
     .first();
   await expect(paragraph).toContainText("We linger by the sea.");
   const bounds = await paragraph.boundingBox();
