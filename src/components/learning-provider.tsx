@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -26,6 +27,8 @@ interface LearningContextValue {
   ready: boolean;
   error: string | null;
   now: string;
+  progress: ReturnType<typeof deriveProgress>;
+  setReviewDeadline: (source: string, deadline: number | null) => void;
   save: (senseId: string, context: string) => boolean;
   undoSave: (senseId: string) => boolean;
   canUndoSave: (senseId: string) => boolean;
@@ -33,6 +36,7 @@ interface LearningContextValue {
   dispute: (evidenceId: string) => boolean;
   setReaderProgress: (percent: number) => boolean;
   reset: () => boolean;
+  restore: (merged: LearningState) => boolean;
 }
 const LearningContext = createContext<LearningContextValue | null>(null);
 function createSession() {
@@ -52,8 +56,14 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     clock.getServerSnapshot,
   );
   const now = new Date(timestamp).toISOString();
+  const progress = useMemo(() => deriveProgress(state), [state]);
+  const setReviewDeadline = useCallback(
+    (source: string, deadline: number | null) =>
+      clock.setDeadline(deadline, source),
+    [clock],
+  );
   const deadline = Math.min(
-    ...deriveProgress(state).flatMap((item) =>
+    ...progress.flatMap((item) =>
       item.dueAt && Date.parse(item.dueAt) > timestamp
         ? [Date.parse(item.dueAt)]
         : [],
@@ -130,6 +140,8 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         ready,
         error,
         now,
+        progress,
+        setReviewDeadline,
         save: (id, context) => {
           const alreadySaved = session.current?.state?.saved.some(
             (saved) => saved.senseId === id,
@@ -158,6 +170,8 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         setReaderProgress: (percent) =>
           run((current) => current.updateReaderProgress(percent)),
         reset,
+        restore: (merged) =>
+          run((current) => current.restoreMergedState(merged)),
       }}
     >
       {children}

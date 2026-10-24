@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { LearningProvider } from "@/components/learning-provider";
+import { TaskLearningProvider } from "@/components/task-learning-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <LearningProvider>{children}</LearningProvider>
+        <LearningProvider>
+          <TaskLearningProvider>{children}</TaskLearningProvider>
+        </LearningProvider>
       </body>
     </html>
   );

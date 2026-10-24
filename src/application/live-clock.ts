@@ -8,7 +8,7 @@ export interface ClockEnvironment {
 
 export class LiveClock {
   private snapshot = 0;
-  private deadline: number | null = null;
+  private readonly deadlines = new Map<string, number>();
   private timer: unknown;
   private detach: (() => void) | null = null;
   private readonly listeners = new Set<() => void>();
@@ -35,8 +35,10 @@ export class LiveClock {
   };
 
   /** The next future review, if any. No intervals compete across screens. */
-  setDeadline(deadline: number | null) {
-    this.deadline = deadline;
+  setDeadline(deadline: number | null, source = "legacy") {
+    if (deadline === null) this.deadlines.delete(source);
+    else if (Number.isFinite(deadline)) this.deadlines.set(source, deadline);
+    else throw new Error("A finite review deadline is required.");
     if (this.listeners.size) this.refresh();
   }
 
@@ -51,7 +53,7 @@ export class LiveClock {
     const next = Math.min(
       now + 60_000,
       midnight.getTime(),
-      this.deadline !== null && this.deadline > now ? this.deadline : Infinity,
+      ...[...this.deadlines.values()].filter((deadline) => deadline > now),
     );
     if (this.listeners.size)
       this.timer = this.environment.schedule(

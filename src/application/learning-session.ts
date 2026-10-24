@@ -93,6 +93,11 @@ export class LearningSession {
     return this.commit((state) => removeSavedSense(state, senseId));
   }
 
+  /** UI must preview and confirm the merge first. The repository still guards stale writes. */
+  restoreMergedState(state: LearningState): LearningState {
+    return this.commit(() => parseLearningState(state));
+  }
+
   private commit(
     update: (state: LearningState) => LearningState,
   ): LearningState {

@@ -23,6 +23,21 @@ describe("shared learning clock", () => {
     return { clock, detach, wake: () => wake() };
   }
 
+  it("combines independent FSRS and legacy deadlines without competing timers", () => {
+    const { clock } = setup();
+    const unsubscribe = clock.subscribe(vi.fn());
+    const started = Date.now();
+    clock.setDeadline(started + 10_000);
+    clock.setDeadline(started + 2_000, "tasks");
+    expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(2_000);
+    expect(clock.getSnapshot()).toBe(started + 2_000);
+    clock.setDeadline(null, "tasks");
+    vi.advanceTimersByTime(8_000);
+    expect(clock.getSnapshot()).toBe(started + 10_000);
+    unsubscribe();
+  });
+
   it("publishes an exact due boundary to all views with one timer", () => {
     const { clock } = setup();
     const home = vi.fn(),
