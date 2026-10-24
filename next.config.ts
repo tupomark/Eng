@@ -18,6 +18,15 @@ const config: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
         ],
       },
+      {
+        source: "/listening",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "microphone=(self), camera=(), geolocation=()",
+          },
+        ],
+      },
     ];
   },
 };

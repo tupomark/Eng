@@ -1,53 +1,66 @@
-# Модель знаний и PostgreSQL
+# Модель знаний, локальные stores и PostgreSQL
 
-LEXIS различает лексему, конкретное значение и владение значением в конкретном навыке. Главный ключ учебного прогресса: `(user_id, sense_id, skill)`. Сохранение значения не создаёт оценку знания. Отсутствие наблюдений означает «нет данных», а не нулевое владение.
+Актуальная схема реализации v2, 24 октября 2026. Основная единица — пользователь + стабильное значение + конкретный навык. Сохранение/импорт — намерение/материал, не evidence. Отсутствие наблюдений — недостаток данных, не нулевое знание. Имена таблиц и полей — инженерный выбор, а не исторически утверждённый пиксельный/product контракт.
 
-| Таблица             | Назначение и ограничения                                                                                                      |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `lexemes`           | Английская лексема, часть речи, IPA, источник и версия источника. Омонимы и разные источники могут иметь разные записи.       |
-| `senses`            | Стабильный ID значения, определение, русский перевод, авторский пример и коллокации; ссылка на лексему.                       |
-| `library_documents` | Только принадлежащие пользователю метаданные документа; исходный текст книги не загружается автоматически.                    |
-| `reader_positions`  | Позиция чтения в символах; составной внешний ключ связывает документ с тем же пользователем.                                  |
-| `user_saved_senses` | Уникальная пара пользователь–значение, дата сохранения, короткий контекст до 1000 символов и необязательный источник.         |
-| `learning_evidence` | Наблюдение по одному значению и одному навыку; источник, версия источника, рубрика, объяснение, время и ключ идемпотентности. |
-| `evidence_disputes` | Неизменяемое исключение принадлежащего пользователю наблюдения из пересчёта. Оригинал сохраняется.                            |
-| `skill_progress`    | Восстанавливаемая проекция по навыку: оценка, число попыток, срок повторения, версия алгоритма. Запись только сервером.       |
+## Идентичности и разделение фактов
 
-Навыки: `recognition` (узнавание), `context` (понимание в контексте), `recall` (активное воспроизведение), `writing` и `speaking`. Простое чтение или самооценка карточки не являются доказательством письма или устной речи.
+| Группа                | Реализованное представление                                                                            | Правило                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Lexeme / Sense        | Авторский `seed`, стабильные sense IDs, формы/POS, версии/provenance                                   | Разные POS/значения не сливаются по строке; unavailable sense остаётся в Library/history                     |
+| Учебное намерение     | Legacy saved sense, materials Inbox rows/intent                                                        | Сохранение не создаёт знания; unresolved candidate не вынуждается ссылаться на первый sense                  |
+| Источник              | Material document/version/chapter/paragraph/character anchor, bookmarks, bounded context visits        | Appearance/position и evidence — разные записи; временный excerpt ledger не полная долговременная provenance |
+| Task                  | Versioned typed target, skill/format/prompt family, rubric, answers/hints, source/evaluator capability | Lexical target и GrammarConcept различны; проверяется допустимая modality                                    |
+| Attempt / Observation | Draft answer, assistance/reveal, final result, exact skill, independent flag и source                  | Uncertain/provider failure не создаёт false negative; accepted correction не independent production          |
+| Competence            | Rebuildable task summary/Observatory, legacy self-report projection                                    | Самоотчёт отдельно от независимых observations; нет общего mastery/CEFR процента                             |
+| Review                | Review item, explicit user rating events, FSRS card/parameters/version, postpone/archive               | Objective evaluation не заменяет user rating; manual reschedule не меняет knowledge                          |
+| Challenge             | Observation exclusion с reason/time/ID, оригинал сохраняется                                           | Исключение сразу применяется; последующие review events воспроизводятся, не «вычитается последнее число»     |
+| Writing               | Draft + immutable revisions/parents, caret/scroll, conflict branches                                   | Старый запрос не затирает новую revision; обе конфликтующие версии сохраняются                               |
+| Listening             | Private media blob/source/transcript/session + assistance                                              | Seek не доказывает playback; transcript disclosure сохраняется; shadowing не pronunciation grade             |
+| Goals/relations       | Local goal revisions и typed editorial edges/provenance                                                | Progress считает определённые observations; workload suggestion требует подтверждения                        |
 
-```mermaid
-erDiagram
-  lexemes ||--o{ senses : contains
-  senses ||--o{ user_saved_senses : saved_as
-  library_documents ||--o{ reader_positions : resumes
-  library_documents o|--o{ user_saved_senses : supplies_context
-  user_saved_senses ||--o{ learning_evidence : observes
-  learning_evidence ||--o| evidence_disputes : excludes
-  user_saved_senses ||--o{ skill_progress : projects
-```
+Семь lexical skills: `recognition`, `context`, `recall`, `writing`, `speaking`, `listening`, `pronunciation`; grammar — отдельный target/skill `grammar`. Старые пять IDs не переименованы. Применение новой модели не переносит recognition history на speaking/listening.
 
-## Наблюдения, расписание и оспаривание
+## Browser storage и backup/restore
 
-В первом браузерном сценарии самооценка сохраняется как `self-review`, исключительно для `recognition`. Это субъективная отметка, не AI-проверка. Повторный запрос с тем же ключом не добавляет ещё одно наблюдение. Порядок воспроизведения должен быть детерминирован: время наблюдения плюс ID при равенстве времени.
+| Store                                  | Содержимое и версия                                                          | Граница                                                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `lexis.learning.v1`                    | Старые saved senses/contexts, self-review evidence/disputes, sample position | Сохраняется без автоматической перезаписи; restore preview/merge проверяет совпадающие ID и конфликты |
+| `lexis.tasks.v1`                       | Definitions, attempts, challenges, review items/events                       | JSON runtime validation, best-effort stale snapshot guard; не cloud transaction                       |
+| `lexis.materials.v1`                   | Books/chapters/anchors/bookmarks/import batches/rows                         | Local owner, ограниченные размеры; additive restore не затирает текущую позицию                       |
+| `lexis.reader.preferences.v1`          | Font/size/spacing                                                            | Не evidence и не влияние на schedule                                                                  |
+| `lexis.goals.v1`                       | Goals/cadence/revisions/archive                                              | Неизменяемое происхождение counts; stale proposals не применяются                                     |
+| `lexis.writing.v1` (IndexedDB)         | Drafts/revisions/conflicts                                                   | Readwrite transactions/revision checks; собственный export/restore                                    |
+| `lexis.media.local.v1` (IndexedDB)     | Imported media blobs/transcripts/playback sessions                           | Private object URLs, не public storage; complete media backup/restore ещё не завершён                 |
+| Preferences/Tutor/context/offline keys | Отдельные typed settings, conversations и bounded session-local excerpts     | Согласия/сроки/удаление отдельно от evidence; соответствующие новые срезы требуют integrated gate     |
 
-Серверная модель предусматривает источники `ai-verification`, `reader`, `writing`, `voice`, `tutor`, но браузер не вправе создавать такие записи или записывать проверенную оценку/уверенность. AI-адаптер впоследствии должен сохранять поставщика, модель, версию рубрики и объяснение. Сырые ответы, аудио и промпты по умолчанию не хранятся.
+JSON проходят runtime validation; TypeScript не валидирует persisted bytes. Повреждение/неизвестная версия блокирует writes и сохраняет исходник для raw export. Read failure не лечится hidden reset. Quota/write failure не публикует success. localStorage CAS best effort не защищает от всех строго одновременных writes. IndexedDB атомарность ограничена конкретной local DB и не заменяет multi-device sync.
 
-`evidence_disputes` не изменяет исходный вывод. Для текущего scope оспаривание сразу исключает наблюдение. История апелляций и подтверждение новой оценкой добавятся отдельными событиями. Проекция должна полностью пересчитываться после исключения, включая интервалы; сохранённое значение после исключения всех его наблюдений снова требует первичного повторения.
+V1 restore проверяет file size/schema, сохраняет IDs, unavailable senses и disputes, показывает preview, требует backup/confirmation и выполняет additive merge. Conflicting IDs/context останавливают перенос. Повтор идентичного импорта идемпотентен, старый backup не активирует исключённое событие. Другие stores экспортируются отдельно. Обещание единого полного profile restore до сверки всех stores/media не даётся.
 
-Браузерный репозиторий уже вычисляет проекции на чтении. SQL-таблица проекций пока представляет контракт будущего сервера. Перед подключением удалённого репозитория нужен атомарный use case: проверка пользователя и владения → идемпотентное наблюдение/исключение → пересчёт проекции → commit. Нельзя отдельно принять апелляцию и продолжать отдавать старую кэшированную оценку. Реализация конкурентных транзакций и фонового пересчёта входит в production gate, а не имитируется текущим UI.
+## FSRS, assistance и replay
 
-## Доступ и хранение
+Идентичность item: `(target kind + ID, skill, prompt family)`. Schedule facts содержат explicit rating event ID, timestamp, scheduler version, параметры и FSRS card. Канонический порядок — время плюс стабильный ID при равенстве. Соседние задания одного target не показываются подряд как независимые успехи. Внешний model confidence и FSRS desired retention не являются процентом владения языком.
 
-RLS включён на всех восьми таблицах в `public`; права выданы явно после отзыва возможных широких project defaults. Каталог доступен только на чтение для `authenticated`. Личные таблицы проверяют `auth.uid() = user_id`; `UPDATE` имеет и `USING`, и `WITH CHECK`. Составные внешние ключи запрещают привязать к своей записи чужой документ или чужое наблюдение. Для браузера evidence/disputes доступны только на чтение и добавление; оценки — только на чтение. `SECURITY DEFINER`, views и публичных привилегированных функций нет.
+`ts-fsrs@5.4.2`/FSRS-6 с pinned policy `ts-fsrs-5.4.2/fsrs-6/lexis-v1` выполняет actual schedule. Старый heuristic recognition bootstrap сначала показывает preview/backup; local legacy event IDs сохраняются как provenance. Только подходящая recognition self-report история переносится в соответствующий item, не в production skills. Более поздний legacy dispute исключает импортированное влияние; backup restore не снимает exclusion.
 
-Индексы покрывают владельца, воспроизведение наблюдений и очередь повторений. На первом этапе не нужны embeddings, графовая СУБД, партиционирование или отдельный сервис на каждый модуль.
+Assistance snapshot фиксирует hint IDs, answer/transcript reveal и accepted correction. Uncertain или технически неоценённая попытка не создаёт observation/lapse. Challenge исключает сомнительное observation и связанные ratings из активного replay; оригинал остаётся audit. Observatory/Mistake patterns/Goals используют активный canonical набор, а не старые cached numbers. Детальная политика — в [FSRS/tasks](fsrs-and-tasks.md) и [Observatory](knowledge-observatory.md).
 
-Удаление аккаунта каскадно удаляет личные записи. Удаление сохранённого значения каскадно удаляет его наблюдения, исключения и проекции: перед включением удалённого адаптера продукт должен явно различить архивирование и окончательное удаление. Удаление документа очищает ссылку в сохранённом значении; короткий контекст остаётся до отдельного удаления. Настраиваемое удаление чувствительных выдержек и проверяемый экспорт — следующие обязательные этапы до пользовательского импорта.
+## SQL и доверенная запись
 
-## Проверки и границы готовности
+Foundation migration содержит `lexemes`, `senses`, `library_documents`, `reader_positions`, `user_saved_senses`, `learning_evidence`, `evidence_disputes`, `skill_progress`. Следующая `20261022205958_archive_and_atomic_commands.sql` добавляет archive/revision semantics, collections/source contexts/document versions/chapters/import rows/writing revisions и private command/legacy-ID receipts. `20261024055040_ai_request_reservations.sql` добавляет ограниченный private quota journal; её отдельные tests не означают подключённый API.
 
-`npm run test:db` поднимает встроенный PostgreSQL через PGlite, применяет миграцию и выполняет запросы с настоящими ролями и RLS. Auth-функция и таблица пользователей в тестах минимальны. Проверяются применение SQL, изоляция двух пользователей, составные FK, права записи, неизменяемость evidence, повтор ключа и принадлежность апелляции.
+Все личные связи проверяют owner составными FK и RLS. Чтение Auth identity выполняется сервером; клиентский `user_id`, score/provider/model не доверенные. Service-only SECURITY INVOKER commands принимают небольшой validated payload, idempotency key и ожидаемую revision. Archive/self-review/dispute/purge/writing revision/legacy UUID mapping выполняются в SQL transaction; повтор команды не создаёт новое событие, конфликт revision обнаруживается. Полная task/FSRS/cloud projector transaction ещё не закрыта этими legacy commands.
 
-Это не проверка Supabase Auth, PostgREST, реальных JWT, конфигурации Data API, восстановления резервных копий или размещённой БД. Они требуют отдельного подключённого development-проекта; удалённые миграции здесь не выполнялись. До production нужны также advisors, наблюдение за запросами и проверка нагрузочного профиля.
+Локальные event IDs не обязаны быть UUID. `legacy-id.ts` и служебный mapping command стабильно отображают legacy namespace/ID в UUIDv5, сохраняют provenance и исключают случайную новую генерацию при каждом переносе. Это основа MIG-01, а не завершённый UI переноса в аккаунт.
 
-Актуальные источники (проверены 21.10.2026): [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Supabase changelog](https://supabase.com/changelog.md), [отключение старых TLS-шифров](https://supabase.com/changelog/cbc-tls-ciphers-deprecated). Изменение TLS с 10.11.2026 не требует правки этой схемы, но должно учитываться при выборе серверного окружения и клиентов.
+## Архивирование, purge и приватные источники
+
+Baseline cascade saved sense→evidence устранён: обычное archive не удаляет историю; FK не позволяет случайно удалить связь с evidence. Explicit purge имеет отдельную команду и точную подтверждающую фразу, account deletion имеет осознанную cascade semantics. Private source deletion и learning excerpt deletion различаются: UI объясняет, что независимая saved/practice история может остаться. Временные Dictionary contexts удалённого источника инвалидируются.
+
+Полный profile purge должен останавливать in-flight writes/capture, охватывать local/session keys, IndexedDB, own cache/service worker и производные contexts; частичная ошибка не должна называться полным удалением. Hosted account purge, storage objects, search/summaries и residual backup SLA остаются отдельным live/operations gate. Browser-local key deletion не доказывает удаление аккаунта в Supabase.
+
+## Проверки и незакрытый hosted scope
+
+PGlite применяет реальные SQL migrations и выполняет ownership/RLS/grants/FK/idempotency/revision/immutability checks с минимальными auth stubs. Domain/application tests проверяют assistance/skill isolation, stable replay, legacy mapping, restore/conflicts/storage failures. Browser journeys проверяют фактическое сохранение и reopen. Последний результат/SHA каждой проверки — в [PROGRESS](PROGRESS.md).
+
+Это не hosted Supabase Auth/JWT/PostgREST/storage, два устройства, реальная account cache isolation, backup drill или production query plan. Доступного Supabase-проекта и app secrets сейчас нет. Remote repository/projector и owner-scoped sync ещё требуют завершения; полная перезапись browser snapshot не используется как проектируемый cloud-write контракт. Индексы owner/target/time/due и bounded retrieval предусмотрены, репрезентативные performance/query-plan замеры остаются открытыми.

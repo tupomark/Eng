@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,6 +15,14 @@ import {
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { DictionaryEntry } from "@/domain";
 import { findEntry } from "@/infrastructure/dictionary/seed";
+import { sentenceSpans } from "@/domain/contextual-lookup";
+import {
+  createDictionaryContextLink,
+  createTutorContextLink,
+  loadDictionaryVisit,
+  type DictionarySourceAnchor,
+} from "@/infrastructure/dictionary/context-navigation";
+import { readLookupSelection } from "@/infrastructure/dictionary/selection-context";
 import { useLearning } from "./learning-provider";
 import { Modal } from "./modal";
 import { ReaderOptions, useReaderPreferences } from "./reader-preferences";
@@ -53,6 +62,7 @@ function startingSection(progress: number): number {
 }
 
 export function Reader() {
+  const router = useRouter();
   const {
     state,
     ready,
@@ -68,6 +78,7 @@ export function Reader() {
     word: string;
     context: string;
     entry?: DictionaryEntry;
+    source?: DictionarySourceAnchor;
   } | null>(null);
   const [selectedSense, setSelectedSense] = useState("");
   const [savedNow, setSavedNow] = useState(false);
@@ -76,11 +87,13 @@ export function Reader() {
   );
   const [undone, setUndone] = useState(false);
   const [complete, setComplete] = useState(false);
+  const [contextNavigationError, setContextNavigationError] = useState("");
   const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
   const [selectionCandidate, setSelectionCandidate] = useState<{
     word: string;
     context: string;
     tokenId?: string;
+    source?: DictionarySourceAnchor;
   } | null>(null);
   const readerBodyRef = useRef<HTMLDivElement>(null);
   const sectionIndex = chosenSection ?? startingSection(state.readerProgress);
@@ -106,53 +119,173 @@ export function Reader() {
       readingOptions.preferences.lineSpacing === "roomy" ? "2" : "1.75",
   } as CSSProperties;
 
-  function openWord(word: string, context: string, tokenId?: string) {
+  function openWord(
+    word: string,
+    context: string,
+    tokenId?: string,
+    source?: DictionarySourceAnchor,
+  ) {
     const entry = findEntry(word);
-    setLookup({ word, context: context.slice(0, 500), entry });
+    setLookup({ word, context: context.slice(0, 1_000), entry, source });
     setHighlightedToken(tokenId ?? null);
     setSelectionCandidate(null);
     setSelectedSense(entry?.senses.length === 1 ? entry.senses[0].id : "");
     setSavedNow(false);
     setFreshSavedSenseId(null);
     setUndone(false);
+    setContextNavigationError("");
+  }
+
+  useEffect(() => {
+    if (!ready) return;
+    let current = true;
+    let frame = 0;
+    void Promise.resolve().then(() => {
+      if (!current) return;
+      const params = new URLSearchParams(window.location.search);
+      const visit = params.get("dictionaryVisit");
+      if (!visit) return;
+      try {
+        const context = loadDictionaryVisit(visit);
+        if (
+          !context ||
+          context.source?.documentId !== "lexis-sample-noticing" ||
+          context.source.documentVersion !== "sample-v1"
+        )
+          return;
+        const sectionMatch = /^sample-section-(\d+)$/u.exec(
+          context.source.chapterId,
+        );
+        const index = sectionMatch ? Number(sectionMatch[1]) : -1;
+        if (index < 0 || index >= sections.length) return;
+        setChosenSection(index);
+        const entry = findEntry(context.surface);
+        const selected = params.get("sense") ?? "";
+        setLookup({
+          word: context.surface,
+          context: context.excerpt,
+          source: context.source,
+          entry,
+        });
+        setSelectedSense(
+          entry?.senses.some((sense) => sense.id === selected) ? selected : "",
+        );
+        const tokenId = window.location.hash.slice(1);
+        if (/^reader-(?:word|paragraph)-[0-9-]+$/u.test(tokenId)) {
+          setHighlightedToken(
+            tokenId.startsWith("reader-word-") ? tokenId : null,
+          );
+          frame = window.requestAnimationFrame(() => {
+            frame = window.requestAnimationFrame(() => {
+              if (current)
+                document
+                  .getElementById(tokenId)
+                  ?.scrollIntoView({ block: "center", behavior: "instant" });
+            });
+          });
+        }
+      } catch {
+        setContextNavigationError(
+          "Your saved dictionary visit could not be reopened. The reading and learning history are unchanged.",
+        );
+      }
+    });
+    return () => {
+      current = false;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    if (lookup === null && highlightedToken)
+      document.getElementById(highlightedToken)?.focus({ preventScroll: true });
+  }, [lookup, highlightedToken]);
+
+  function openDedicatedDictionary(
+    level: "full" | "deep",
+    target: "dictionary" | "tutor" = "dictionary",
+  ) {
+    if (!lookup) return;
+    try {
+      const visit = crypto.randomUUID();
+      const source = lookup.source ?? {
+        documentId: "lexis-sample-noticing",
+        documentVersion: "sample-v1",
+        chapterId: `sample-section-${sectionIndex}`,
+        paragraphIndex: 0,
+        characterOffset: 0,
+      };
+      const params = new URLSearchParams({
+        dictionaryVisit: visit,
+        sense: selectedSense,
+      });
+      const tokenId =
+        highlightedToken ??
+        `reader-paragraph-${sectionIndex}-${source.paragraphIndex}`;
+      const contextInput = {
+        surface: lookup.word,
+        excerpt: lookup.context,
+        source,
+        returnHref: `/reader?${params.toString()}#${tokenId}`,
+        senseId: selectedSense || undefined,
+        level,
+      };
+      const href =
+        target === "tutor"
+          ? createTutorContextLink(contextInput, window.sessionStorage, visit)
+          : createDictionaryContextLink(
+              contextInput,
+              window.sessionStorage,
+              visit,
+            );
+      setContextNavigationError("");
+      router.push(href);
+    } catch {
+      setContextNavigationError(
+        "This browser could not keep the reading context for Dictionary. Your selection remains here; try opening it again.",
+      );
+    }
   }
 
   useEffect(() => {
     if (lookup !== null) return;
     const readSelection = () => {
       const selection = window.getSelection();
-      const word = selection?.toString().trim() ?? "";
       const body = readerBodyRef.current;
-      if (
-        !body ||
-        !selection?.rangeCount ||
-        !/^[a-zA-Z]+(?:['’-][a-zA-Z]+)*$/.test(word)
-      ) {
+      if (!body || !selection?.rangeCount) {
         setSelectionCandidate(null);
         return;
       }
       const range = selection.getRangeAt(0);
-      if (
-        !body.contains(range.startContainer) ||
-        !body.contains(range.endContainer)
-      ) {
+      const selected = readLookupSelection(body, range);
+      if (!selected) {
         setSelectionCandidate(null);
         return;
       }
-      const anchor =
-        range.startContainer instanceof Element
-          ? range.startContainer
-          : range.startContainer.parentElement;
-      const context = anchor?.closest<HTMLElement>("[data-reader-sentence]")
-        ?.dataset.readerSentence;
-      if (!context) return;
-      const tokenId = anchor?.closest<HTMLElement>("[data-reader-token]")?.id;
+      const {
+        surface: word,
+        context,
+        tokenId,
+        paragraphIndex,
+        characterOffset,
+      } = selected;
       setSelectionCandidate((previous) =>
         previous?.word === word &&
         previous.context === context &&
         previous.tokenId === tokenId
           ? previous
-          : { word, context, tokenId },
+          : {
+              word,
+              context,
+              tokenId,
+              source: {
+                documentId: "lexis-sample-noticing",
+                documentVersion: "sample-v1",
+                chapterId: `sample-section-${sectionIndex}`,
+                paragraphIndex,
+                characterOffset,
+              },
+            },
       );
     };
     document.addEventListener("selectionchange", readSelection);
@@ -160,37 +293,49 @@ export function Reader() {
   }, [lookup, sectionIndex]);
 
   function paragraph(text: string, paragraphIndex: number) {
-    const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) ?? [text];
-    return sentences.map((sentence, sentenceIndex) => (
-      <span key={sentenceIndex} data-reader-sentence={sentence}>
-        {sentence
-          .split(/([A-Za-z]+(?:['’-][A-Za-z]+)*)/g)
-          .map((token, tokenIndex) => {
-            const tokenId = `reader-word-${sectionIndex}-${paragraphIndex}-${sentenceIndex}-${tokenIndex}`;
-            return /^[A-Za-z]/.test(token) ? (
-              <button
-                className={`reader-word${findEntry(token) ? " reader-word-known" : ""}${highlightedToken === tokenId ? " reader-word-selected" : ""}`}
-                key={tokenIndex}
-                id={tokenId}
-                data-reader-token
-                aria-label={`Look up ${token}`}
-                aria-pressed={highlightedToken === tokenId}
-                onClick={(event) => {
-                  if (
-                    event.detail === 0 ||
-                    !window.getSelection()?.toString().trim()
-                  )
-                    openWord(token, sentence, tokenId);
-                }}
-              >
-                {token}
-              </button>
-            ) : (
-              <span key={tokenIndex}>{token}</span>
-            );
-          })}
-      </span>
-    ));
+    return sentenceSpans(text).map(
+      ({ text: sentence, start: sentenceStart }, sentenceIndex) => {
+        let tokenOffset = 0;
+        return (
+          <span key={sentenceIndex} data-reader-sentence={sentence}>
+            {sentence
+              .split(/([\p{L}\p{M}\p{N}]+(?:['’ʼ‐‑-][\p{L}\p{M}\p{N}]+)*)/gu)
+              .map((token, tokenIndex) => {
+                const characterOffset = sentenceStart + tokenOffset;
+                tokenOffset += token.length;
+                const tokenId = `reader-word-${sectionIndex}-${paragraphIndex}-${sentenceIndex}-${tokenIndex}`;
+                return /^[\p{L}\p{M}\p{N}]/u.test(token) ? (
+                  <button
+                    className={`reader-word${findEntry(token) ? " reader-word-known" : ""}${highlightedToken === tokenId ? " reader-word-selected" : ""}`}
+                    key={tokenIndex}
+                    id={tokenId}
+                    data-reader-token
+                    aria-label={`Look up ${token}`}
+                    aria-pressed={highlightedToken === tokenId}
+                    onClick={(event) => {
+                      if (
+                        event.detail === 0 ||
+                        !window.getSelection()?.toString().trim()
+                      )
+                        openWord(token, sentence, tokenId, {
+                          documentId: "lexis-sample-noticing",
+                          documentVersion: "sample-v1",
+                          chapterId: `sample-section-${sectionIndex}`,
+                          paragraphIndex,
+                          characterOffset,
+                        });
+                    }}
+                  >
+                    {token}
+                  </button>
+                ) : (
+                  <span key={tokenIndex}>{token}</span>
+                );
+              })}
+          </span>
+        );
+      },
+    );
   }
 
   function moveSection(next: number) {
@@ -239,6 +384,11 @@ export function Reader() {
           {readingOptions.error}
         </p>
       )}
+      {contextNavigationError && lookup === null && (
+        <p className="status-banner error" role="alert">
+          {contextNavigationError}
+        </p>
+      )}
       {!ready ? (
         <div className="standalone" role="status">
           Opening your reading space…
@@ -280,6 +430,7 @@ export function Reader() {
                         selectionCandidate.word,
                         selectionCandidate.context,
                         selectionCandidate.tokenId,
+                        selectionCandidate.source,
                       )
                     }
                   >
@@ -299,7 +450,12 @@ export function Reader() {
                   0{sectionIndex + 1} — {section.label}
                 </p>
                 {section.paragraphs.map((text, paragraphIndex) => (
-                  <p className="reader-paragraph" key={text}>
+                  <p
+                    className="reader-paragraph"
+                    id={`reader-paragraph-${sectionIndex}-${paragraphIndex}`}
+                    data-reader-paragraph={paragraphIndex}
+                    key={text}
+                  >
                     {paragraph(text, paragraphIndex)}
                   </p>
                 ))}
@@ -517,6 +673,31 @@ export function Reader() {
               {lookup.entry.provenance.version}. Original definitions and
               examples; audio is not included.
             </p>
+            {contextNavigationError && (
+              <p className="status-banner error" role="alert">
+                {contextNavigationError}
+              </p>
+            )}
+            <div className="modal-actions">
+              <button
+                className="button secondary"
+                onClick={() => openDedicatedDictionary("full")}
+              >
+                Open full entry <ArrowRight size={16} />
+              </button>
+              <button
+                className="button ghost"
+                onClick={() => openDedicatedDictionary("deep")}
+              >
+                Deep Dive <ArrowRight size={16} />
+              </button>
+              <button
+                className="button ghost"
+                onClick={() => openDedicatedDictionary("full", "tutor")}
+              >
+                Ask Tutor about this passage <ArrowRight size={16} />
+              </button>
+            </div>
           </>
         ) : (
           lookup && (
@@ -530,6 +711,17 @@ export function Reader() {
                 Try linger, stillness, deliberate, glimpse, beneath, wander,
                 trace or quiet.
               </p>
+              {contextNavigationError && (
+                <p className="status-banner error" role="alert">
+                  {contextNavigationError}
+                </p>
+              )}
+              <button
+                className="button secondary"
+                onClick={() => openDedicatedDictionary("full")}
+              >
+                Search Dictionary <Search size={16} />
+              </button>
               <button
                 className="button secondary"
                 onClick={() => setLookup(null)}

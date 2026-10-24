@@ -1,4 +1,5 @@
 "use client";
+import { assertLocalWritesAllowed } from "@/infrastructure/storage/local-write-guard";
 
 import { useEffect, useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
@@ -91,6 +92,7 @@ export function useReaderPreferences() {
     setPreferences(updated);
     if (blocked.current) return;
     try {
+      assertLocalWritesAllowed(window.localStorage);
       window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
       setError(null);
     } catch {
@@ -102,6 +104,7 @@ export function useReaderPreferences() {
 
   function reset() {
     try {
+      assertLocalWritesAllowed(window.localStorage);
       window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(defaults));
       current.current = defaults;
       setPreferences(defaults);

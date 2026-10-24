@@ -1,13 +1,25 @@
 "use client";
 import {
+  assertLocalWritesAllowed,
+  suspendLocalWrites,
+} from "@/infrastructure/storage/local-write-guard";
+import {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
-import { emptyState, type LearningState, type Rating } from "@/domain";
+import {
+  deriveProgress,
+  emptyState,
+  type LearningState,
+  type Rating,
+} from "@/domain";
+import { createBrowserClock } from "@/infrastructure/storage/browser-clock";
 import { LearningSession } from "@/application/learning-session";
 import {
   BrowserLearningRepository,
@@ -18,6 +30,9 @@ interface LearningContextValue {
   state: LearningState;
   ready: boolean;
   error: string | null;
+  now: string;
+  progress: ReturnType<typeof deriveProgress>;
+  setReviewDeadline: (source: string, deadline: number | null) => void;
   save: (senseId: string, context: string) => boolean;
   undoSave: (senseId: string) => boolean;
   canUndoSave: (senseId: string) => boolean;
@@ -25,6 +40,7 @@ interface LearningContextValue {
   dispute: (evidenceId: string) => boolean;
   setReaderProgress: (percent: number) => boolean;
   reset: () => boolean;
+  restore: (merged: LearningState) => boolean;
 }
 const LearningContext = createContext<LearningContextValue | null>(null);
 function createSession() {
@@ -37,11 +53,35 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<LearningState>(emptyState);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clock] = useState(createBrowserClock);
+  const timestamp = useSyncExternalStore(
+    clock.subscribe,
+    clock.getSnapshot,
+    clock.getServerSnapshot,
+  );
+  const now = new Date(timestamp).toISOString();
+  const progress = useMemo(() => deriveProgress(state), [state]);
+  const setReviewDeadline = useCallback(
+    (source: string, deadline: number | null) =>
+      clock.setDeadline(deadline, source),
+    [clock],
+  );
+  const deadline = Math.min(
+    ...progress.flatMap((item) =>
+      item.dueAt && Date.parse(item.dueAt) > timestamp
+        ? [Date.parse(item.dueAt)]
+        : [],
+    ),
+  );
+  useEffect(() => {
+    clock.setDeadline(Number.isFinite(deadline) ? deadline : null);
+  }, [clock, deadline]);
   const session = useRef<LearningSession | null>(null);
   const undoableSaves = useRef(new Set<string>());
   useEffect(() => {
     const read = () => {
       try {
+        assertLocalWritesAllowed(window.localStorage);
         session.current ??= createSession();
         setState(session.current.load());
         undoableSaves.current.clear();
@@ -58,8 +98,21 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     const sync = (event: StorageEvent) => {
       if (event.key === STORAGE_KEY || event.key === null) read();
     };
+    const purge = () => {
+      suspendLocalWrites();
+      session.current = null;
+      undoableSaves.current.clear();
+      setState(emptyState());
+      setError(
+        "Local profile changes are paused for deletion. Finish in Settings, then start fresh.",
+      );
+    };
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    window.addEventListener("lexis-local-purge", purge);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("lexis-local-purge", purge);
+    };
   }, []);
   const run = useCallback(
     (command: (current: LearningSession) => LearningState) => {
@@ -85,6 +138,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   );
   const reset = () => {
     try {
+      assertLocalWritesAllowed(window.localStorage);
       window.localStorage.removeItem(STORAGE_KEY);
       const next = createSession();
       const loaded = next.load();
@@ -104,6 +158,9 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         state,
         ready,
         error,
+        now,
+        progress,
+        setReviewDeadline,
         save: (id, context) => {
           const alreadySaved = session.current?.state?.saved.some(
             (saved) => saved.senseId === id,
@@ -132,6 +189,8 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         setReaderProgress: (percent) =>
           run((current) => current.updateReaderProgress(percent)),
         reset,
+        restore: (merged) =>
+          run((current) => current.restoreMergedState(merged)),
       }}
     >
       {children}

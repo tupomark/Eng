@@ -1,3 +1,4 @@
+import { assertLocalWritesAllowed } from "./local-write-guard";
 import type {
   LearningRepository,
   SnapshotLearningRepository,
@@ -20,6 +21,7 @@ export class BrowserLearningRepository
     };
   }
   commit(state: LearningState, expected: string | null): string {
+    assertLocalWritesAllowed(this.storage);
     if (this.storage.getItem(STORAGE_KEY) !== expected)
       throw new Error(
         "Learning changed in another tab. Reload this page before continuing.",

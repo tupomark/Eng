@@ -1,4 +1,45 @@
-# План реализации первого этапа
+# План завершения LEXIS — контракт v2
+
+## Действующая цель и исходная точка
+
+Последнее явное задание владельца v2 от 22 октября 2026 заменяет endpoint «первый vertical slice» полным продуктом: M01–M14, X01–X10, FLOW-01–FLOW-10 и горизонтальные требования. [Полный backlog по 178 ID](REQUIREMENTS_TRACEABILITY.md#полный-контракт-владельца-v2--актуальный-backlog) содержит ожидаемое поведение, код, проверку, SHA/результат, уровень готовности и остаточную границу. Нижеследующие критерии первой итерации сохранены как история, а не текущий предел разработки.
+
+Начальный read-only audit подтвердил: remote `main` = `c39997bc243f54af5c1ae5045ebfc1c51058fa85`, расхождений с входным SHA задания нет; работа начата в `codex/product-completion-v2`. Исторический CI на `dea5a6d` прошёл 64 unit/database и 30 Chromium/WebKit e2e. Новые изменения требуют собственного прогона; numbers не переносятся как свежие.
+
+## Порядок S0–S9 и проверяемые выходы
+
+| Этап | Исполнение                                                                                                                                   | Проверяемый выход и gate                                                                                                                                                |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S0   | Проверить актуальный HEAD/изменения/источники, полный backlog, BUG-01/02 и regression baseline                                               | Unavailable-only/mixed Library fixtures; shared due clock/focus/visibility/local-date tests; новые unit/DB/typecheck/lint/build/browser результаты без изменения данных |
+| S1   | Совместимые DATA/LEARN/task identities, skill/concept separation, v1 backup/preview/migration, archive/purge, event/review/challenge replay  | Стабильные legacy IDs, round-trip counts/values, no false evidence from save/import/help; поздний Challenge пересчитывает зависимости                                   |
+| S2   | Auth/server repository, RLS/storage, small atomic/idempotent commands, sync/revisions/conflicts и export/restore                             | Реальные A/B/anon/expiry/storage/JWT и два устройства; без внешнего test-проекта — готовые contracts/fixtures/instructions с `awaiting-configuration`                   |
+| S3   | Own Library и безопасный TXT/EPUB/lexical import, Dictionary Quick/Full/Deep, Smart Inbox, Unicode phrase lookup и structural Reader anchors | Own material→context→explicit sense/intent→save/reopen/source return; 1 000+ import rows с progress/cancel/retry/rollback и malicious-file rejection                    |
+| S4   | Реальный library-backed FSRS, общий task engine, форматы, scheduler identity/migration/siblings/workload/recovery                            | Reproducible new/due/lapse/clock/timezone/idempotency/dispute/version tests; skill isolation и сохранённая сессия; multimodal gate отдельно                             |
+| S5   | Versioned AI pipeline/evaluation, Challenge, scoped contextual Tutor, three styles/five session types, fairness evals                        | Runtime+semantic validation/cancel/retry/budgets/uncertainty; живой provider и все пользовательские переходы или честный external gate                                  |
+| S6   | Writing autosave/revisions/conflicts/stale feedback, Grammar concepts/rules/tasks, Mistake DNA/Knowledge Gaps                                | Draft→feedback error/style→Grammar→independent practice→self-edit→correct separate grammar/writing evidence; originals не теряются                                      |
+| S7   | PTT и отдельно live Voice/ASR/TTS, specialized pronunciation, Listening playback/transcript/chunks/shadowing                                 | Реальные источники/transport/scorer где настроены; permissions/interruption/pointercancel/cleanup; no false pronunciation или transcript-based independent listening    |
+| S8   | Semantic Network, Observatory/metric definitions, Goals, Memory/Personal Corpus/Immersion и общая IA                                         | Типизированные объяснимые связи, controlled-history counts, consent/retrieval/delete, recommendations с основаниями и подтверждёнными изменениями целей                 |
+| S9   | PWA/private offline/update, UI/accessibility/visual/performance, operations и release verification                                           | E01–E30 и FLOW-01–10 на production build; actual device/live/rights/backup/deploy gates; точный readiness report без выдуманного общего процента                        |
+
+S0 исправления предшествуют расширению пользовательских сценариев. Независимые части следующих этапов можно вести параллельно после определения общих contracts. Domain, UI, data preservation, accessibility и безопасность проверяются внутри каждого среза; S9 сверяет целостность и закрывает оставшиеся ограничения.
+
+Отсутствие Supabase/AI/voice/license/device не разрешает остановить независимую работу или назвать адаптер живой интеграцией. Для каждого gate ведётся [реестр зависимостей](risks-and-dependencies.md#реестр-внешних-gates-v2). Платные услуги, API расходы и destructive production migrations не создаются по умолчанию. Для публикации исходников в `tupomark/Eng` действует ранее данное разрешение владельца; GitHub source sync не означает deployment.
+
+## Проверка после каждого совместимого изменения
+
+1. Проверить точные изменённые contracts и негативные случаи подходящими unit/application/DB tests; не писать зеркальные проверки ради количества.
+2. Пройти strict typecheck, lint/formatting и production build для готового набора изменений; браузерные journeys проверяют реальное действие→данные→reopen.
+3. Для UI получить реальные mobile/desktop captures из указанного SHA и проверить длинный RU/IPA, keyboard/focus/200%/reduced motion. Hardware iPhone не заменяется preset.
+4. Для внешней возможности отдельно зафиксировать real provider/config/rights/cost/retention и actual successful/error path; fixture/port не повышает статус до `verified-live`.
+5. Обновить PROGRESS и соответствующие строки traceability: поведение, файлы, commands/results/environment/SHA, evidence, оставшийся gate и следующий конкретный шаг.
+
+## Checkpoint и критерий завершения
+
+При границе сессии записать точный HEAD/ветку, completed IDs с уровнем готовности, оставшиеся требования, команды и результаты проверок, реальные blockers и **следующий конкретный файл/сценарий**. Продолжение начинается с checkpoint, а не повторного проектирования. Остановить работу после очередного плана, экрана или единственного green build нельзя, если независимые задачи доступны.
+
+Полное выполнение требует всех четырнадцати настоящих модулей и десяти механизмов, безопасных data/auth/sync/restore flows, реального FSRS и настроенных/проверенных обязательных AI/speech/dictionary capabilities. Release дополнительно требует device/rights/performance/operations gates. До этого отчёт перечисляет точный реализованный scope и недостающие gates вместо «всё готово».
+
+## История: первоначальный план foundation и первого среза
 
 Работа ведётся отдельными проверяемыми срезами. Этапы ниже определяют порядок и критерии готовности; фактические результаты запуска проверок фиксируются в handoff и не предполагаются заранее.
 

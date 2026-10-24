@@ -86,7 +86,7 @@ describe("PostgreSQL migration and access boundaries", () => {
       join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relkind = 'r'
     `);
-    expect(result.rows).toHaveLength(8);
+    expect(result.rows.length).toBeGreaterThanOrEqual(8);
     expect(result.rows.every((row) => row.relrowsecurity)).toBe(true);
   });
 

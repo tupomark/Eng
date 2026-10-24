@@ -1,0 +1,61 @@
+.container {
+  max-width: 680px;
+  margin-inline: auto;
+}
+.panel {
+  padding: clamp(24px, 5vw, 42px);
+  background: var(--surface-reading);
+}
+.panel h2 {
+  margin-bottom: 16px;
+}
+.panel p {
+  line-height: 1.7;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+.formArea {
+  margin-block: 24px 8px;
+}
+.form {
+  display: grid;
+  gap: 22px;
+}
+.form label {
+  display: grid;
+  gap: 10px;
+  font-size: 15px;
+}
+.form input,
+.form select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-control);
+  padding: 12px 14px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 16px;
+}
+.form button,
+.session button {
+  min-height: 46px;
+  justify-content: center;
+  white-space: normal;
+}
+.session {
+  display: grid;
+  gap: 18px;
+}
+.feedback {
+  margin-block: 22px 0;
+  padding: 16px;
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-control);
+}
+.note {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--glass-stroke);
+}
