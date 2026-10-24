@@ -64,3 +64,9 @@ Baseline cascade saved sense→evidence устранён: обычное archive
 PGlite применяет реальные SQL migrations и выполняет ownership/RLS/grants/FK/idempotency/revision/immutability checks с минимальными auth stubs. Domain/application tests проверяют assistance/skill isolation, stable replay, legacy mapping, restore/conflicts/storage failures. Browser journeys проверяют фактическое сохранение и reopen. Последний результат/SHA каждой проверки — в [PROGRESS](PROGRESS.md).
 
 Это не hosted Supabase Auth/JWT/PostgREST/storage, два устройства, реальная account cache isolation, backup drill или production query plan. Доступного Supabase-проекта и app secrets сейчас нет. Remote repository/projector и owner-scoped sync ещё требуют завершения; полная перезапись browser snapshot не используется как проектируемый cloud-write контракт. Индексы owner/target/time/due и bounded retrieval предусмотрены, репрезентативные performance/query-plan замеры остаются открытыми.
+
+### Assessment policy and additional sources
+
+`TaskChallenge.initiator` is optional for backwards compatibility (`learner` when absent); an `assessment-policy` challenge includes its versioned `policyId`. The policy preserves original definitions/attempts/evaluations and adds exclusions with stable IDs. Linked scheduler events are replayed after exclusion. Old backups cannot reactivate a withdrawn content verdict through the mounted application projection.
+
+`lexis.sense-contexts.v1` records multiple stable-ID source passages per internal sense without duplicating the sense or replacing the original learning-v1 excerpt. Exact sense/surface/excerpt/structural-source identity is deduplicated; conflicting restore IDs stop the merge. Source removal and evidence deletion remain distinct. Complete profile/cloud export and sync remain separate unfinished contracts.

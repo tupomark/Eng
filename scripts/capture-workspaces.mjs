@@ -304,6 +304,9 @@ for (const configuration of engineConfigurations) {
     await expect(
       page.getByRole("status").filter({ hasText: /^Saved on this device$/u }),
     ).toBeVisible();
+    await page
+      .getByRole("textbox", { name: "Your English text", exact: true })
+      .click();
     await capture(
       "writing-draft",
       "Actual editor input/autosave at its focused scroll position, no invented writing proficiency or AI correction.",

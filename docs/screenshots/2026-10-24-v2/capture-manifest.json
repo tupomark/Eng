@@ -1,0 +1,435 @@
+{
+  "generatedAt": "2026-10-24T23:46:02.873Z",
+  "sourceHead": "9760e5a095bcdc689eb8969dff561b87b23c5ecb",
+  "builtSourceHead": "9760e5a095bcdc689eb8969dff561b87b23c5ecb",
+  "sourceAnchor": "a3db700",
+  "hasUncommittedChanges": true,
+  "origin": "http://127.0.0.1:3000",
+  "content": "Fresh isolated local profiles; original fixtures and real UI actions. Not production learner data or a mastery claim.",
+  "limitations": [
+    "Screenshots do not establish full accessibility, WCAG certification or final owner visual approval.",
+    "iPhone 13 WebKit emulation is not physical iPhone Safari/standalone verification.",
+    "No live AI, hosted Auth/sync, ASR/TTS/live transport or pronunciation provider is verified here.",
+    "Long-content, 200% zoom, screen reader, heat/memory and audio interruption checks require separate evidence."
+  ],
+  "browsers": [
+    {
+      "name": "desktop-chromium",
+      "viewport": {
+        "width": 1440,
+        "height": 1050
+      },
+      "deviceScaleFactor": 1,
+      "reducedMotion": "reduce",
+      "captures": [
+        {
+          "filename": "desktop-chromium-home-first-use.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-library-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-import-start.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-inbox-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-learn-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-observatory-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-settings.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-reader-sample.png",
+          "detail": "Original three-part sample Reader.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-dictionary-quick.png",
+          "detail": "Real Quick View over the original reading context.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-dictionary-full.png",
+          "detail": "Explicitly selected editorial sense, bounded source context.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-dictionary-deep.png",
+          "detail": "Authored usage/contrast, not generated licensed content.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-dictionary-unavailable.png",
+          "detail": "Honest unavailable lookup outside eight authored entries.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-import-preview.png",
+          "detail": "Preview before private local storage; no upload.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-reader-own-text.png",
+          "detail": "Original TXT stored by a real import action, with saved bookmark.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-library-material.png",
+          "detail": "Real local document; no fabricated learning count.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-home-resume.png",
+          "detail": "Home resumes the original local imported document.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-inbox-imported.png",
+          "detail": "Original XLSX rows awaiting decisions; import creates no knowledge or bulk due.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-practice-answer.png",
+          "detail": "Actual answer draft in a closed recall task.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-practice-feedback.png",
+          "detail": "Deterministic closed-task result from the real submitted answer.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-practice-fsrs.png",
+          "detail": "Explicit user rating, real library-backed FSRS; no mastery claim.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-learn.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-core.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-observatory.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-network.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-writing-draft.png",
+          "detail": "Actual editor input/autosave at its focused scroll position, no invented writing proficiency or AI correction.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-grammar.png",
+          "detail": "Authored concept/rule and common task practice.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-goals.png",
+          "detail": "Declared optional goal saved by real action; defined count, no artificial percentage.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-tutor-chat.png",
+          "detail": "Local question draft and unavailable capability; no external AI request or canned reply.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-voice-idle.png",
+          "detail": "Explicit visual prototype; no microphone capture.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-voice-listening.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-voice-processing.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-voice-speaking.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-voice-paused.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-voice-error.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-listening-hidden.png",
+          "detail": "Original synthetic audio really played, transcript hidden; no microphone request.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-listening-assisted.png",
+          "detail": "Explicit transcript disclosure; no independent listening grade fabricated.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-offline-before-setup.png",
+          "detail": "Public workspace before opt-in; not a claim of offline delivery yet.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-offline-network-disabled.png",
+          "detail": "Real context network disabled; public cached shell, private document stays in browser storage.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-reader-network-disabled.png",
+          "detail": "Actual original imported text reopened with network disabled.",
+          "horizontalOverflow": false
+        }
+      ],
+      "pageErrors": [],
+      "result": "captured",
+      "browserVersion": "154.0.8037.57"
+    },
+    {
+      "name": "iphone-webkit",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "reducedMotion": "reduce",
+      "captures": [
+        {
+          "filename": "iphone-webkit-home-first-use.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-library-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-import-start.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-inbox-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-learn-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-observatory-empty.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-settings.png",
+          "detail": "First-use local state; no invented progress.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-reader-sample.png",
+          "detail": "Original three-part sample Reader.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-dictionary-quick.png",
+          "detail": "Real Quick View over the original reading context.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-dictionary-full.png",
+          "detail": "Explicitly selected editorial sense, bounded source context.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-dictionary-deep.png",
+          "detail": "Authored usage/contrast, not generated licensed content.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-dictionary-unavailable.png",
+          "detail": "Honest unavailable lookup outside eight authored entries.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-import-preview.png",
+          "detail": "Preview before private local storage; no upload.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-reader-own-text.png",
+          "detail": "Original TXT stored by a real import action, with saved bookmark.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-library-material.png",
+          "detail": "Real local document; no fabricated learning count.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-home-resume.png",
+          "detail": "Home resumes the original local imported document.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-inbox-imported.png",
+          "detail": "Original XLSX rows awaiting decisions; import creates no knowledge or bulk due.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-practice-answer.png",
+          "detail": "Actual answer draft in a closed recall task.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-practice-feedback.png",
+          "detail": "Deterministic closed-task result from the real submitted answer.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-practice-fsrs.png",
+          "detail": "Explicit user rating, real library-backed FSRS; no mastery claim.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-learn.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-core.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-observatory.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-network.png",
+          "detail": "Fresh local profile after one actual submitted task; source facts remain inspectable.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-writing-draft.png",
+          "detail": "Actual editor input/autosave at its focused scroll position, no invented writing proficiency or AI correction.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-grammar.png",
+          "detail": "Authored concept/rule and common task practice.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-goals.png",
+          "detail": "Declared optional goal saved by real action; defined count, no artificial percentage.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-tutor-chat.png",
+          "detail": "Local question draft and unavailable capability; no external AI request or canned reply.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-voice-idle.png",
+          "detail": "Explicit visual prototype; no microphone capture.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-voice-listening.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-voice-processing.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-voice-speaking.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-voice-paused.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-voice-error.png",
+          "detail": "Explicit simulated visual state; no actual recording/speech/provider.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-listening-hidden.png",
+          "detail": "Original synthetic audio really played, transcript hidden; no microphone request.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-listening-assisted.png",
+          "detail": "Explicit transcript disclosure; no independent listening grade fabricated.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-offline-before-setup.png",
+          "detail": "Public workspace before opt-in; not a claim of offline delivery yet.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-offline-network-disabled.png",
+          "detail": "Real context network disabled; public cached shell, private document stays in browser storage.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-reader-network-disabled.png",
+          "detail": "Actual original imported text reopened with network disabled.",
+          "horizontalOverflow": false
+        }
+      ],
+      "pageErrors": [],
+      "result": "captured",
+      "browserVersion": "27.2"
+    }
+  ]
+}

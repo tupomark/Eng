@@ -194,3 +194,45 @@ README/product/architecture/data-model актуализированы под р�
 | `a3db700` | Opt-in PWA/public shell/navigation    | Original vector/PNG icons; private API/Auth не кэшируются; install/update/device gates отдельно |
 
 Полный browser run **112 случаев** выполняется после этих изменений; промежуточные первые успешные случаи не подменяют итог. Реальные новые captures ещё ожидаются; соответствующие pending секции оставлены в design-system/REFERENCE_REVIEW. Последний точный HEAD перед продолжением следует читать через `git rev-parse HEAD`, поскольку после source anchor отдельно фиксируется документация.
+
+## 24 октября 2026 — review branch опубликована, повторный интеграционный gate
+
+Source последовательно сохранён отдельными feature-коммитами; `f9ab8a69dbae2170bd1e93f4c472b75c27aee618` опубликован обычным push в `codex/product-completion-v2`, без force и изменения main. Создан [draft PR #1](https://github.com/tupomark/Eng/pull/1). Это публикация исходников, не deployment и не выпуск продукта. [GitHub CI на этом source](https://github.com/tupomark/Eng/actions/runs/40089892923) запущен; результат записывается после завершения.
+
+Первый общий browser gate новой функциональности завершился **109/112** за 6,6 минуты. Все 56 Chromium прошли; три WebKit Listening failures не скрыты. Воспроизведены реальные причины: этот Linux WebKit не сохраняет Blob/File в IndexedDB (`UnknownError`) и не предоставляет MediaRecorder. Commit `2107f14` сохраняет новые аудиоданные как `array-buffer-v1`, читает прежние Blob без перезаписи, удерживает в списке лишь метаданные и материализует выбранный источник. Проверки микрофона различают реально доступный recorder и честную unavailable-ветку; Chromium проверяет освобождение настоящего MediaStream track. Это не подтверждение hardware Safari.
+
+На чистом `f9ab8a6` в 11:26–11:27 UTC прошли `npm run build`, **274/274 unit/database tests (25 suites, 29,85 с)** и `prettier --check .`. Новый полный browser run включает **114 случаев**: дополнительно реальный активный worker → подтверждённое удаление профиля → отсутствие регистрации/cache и запрет позднего восстановления. Он пока выполняется; успешный результат не предполагается. Приложение и личные данные в публичный deploy не публиковались.
+
+## 24 октября, с 23:10 UTC — исправления обучения, мобильного первого экрана и browser gates
+
+На восстановленной среде продолжен существующий PR#1 без повторного проектирования. Дополнительные source commits: `f583bed` — несколько durable source passages для одного sense без изменения learning-v1; `a665846` — явная withdrawal policy для неверного Listening rubric; `c8fc2d7` — main landmark Writing и видимые file controls; `9c74699` — мобильные Home/Reader/Dictionary; `d68d431` — правильный абзац fixture в геометрическом тесте; `d509857` — quiet disclosure-marker и корректный focused Writing capture. Source snapshots не менялись.
+
+Реальная новая возможность: после двух разных контекстов одного слова сохранить оба источника, найти их в Library, экспортировать/preview-merge восстановить, не дублируя смысл и не создавая evidence. Новый Listening prompt проверяет услышанное действие. Старые location-verdicts больше не повышают/снижают владение `linger`: исходный аудит остаётся, explicit policy exclusions пересчитывают FSRS после более поздних попыток; UI/Core получают согласованное состояние даже при отказе записи.
+
+Фактические локальные проверки:
+
+- `npm run build`: прошёл на source `9c74699`; после cosmetic marker/script changes повторно прошёл на `d509857`.
+- `vitest run`: **288/288**, 27 suites, **25,33с**, 23:24 UTC. Strict TypeScript, ESLint с zero warnings и Prettier также прошли. Измерения отдельного Node benchmark не выдаются за iPhone/web vitals.
+- Source `e092d1f`: **28/28 Chromium/WebKit**, 1,7мин — Dictionary, unavailable Library, Listening/media, offline worker purge и два durable contexts.
+- Source `9c74699` + latest test files: targeted48 дал **46 passed**, два failures были ошибочным ожиданием тела текста от title-параграфа fixture. После уточнения locator `d68d431` все **6/6 mobile regressions** прошли за13,4с, включая реальный абзац при default font≥18px. Остальные46 не были переименованы в48/48.
+- Новый assessment-withdrawal browser story прошёл в обоих движках: boot → audit preserved → policy exclusion → later FSRS replay → Core1active/1excluded → reload without duplicate.
+
+Общий GitHub CI проверяется на точном remote source; прежние runs с selector failures не объявлены зелёными. Вся итоговая цепочка и её фактический SHA/result доступны через PR#1; заключительный результат записывается отдельно, когда run завершён. Локальная библиотека браузеров использовала `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1` только из-за linker path к workspace libraries; настоящий WebKit исполнялся. Это не physical iPhone proof.
+
+Реальные captures и сравнение: [REFERENCE_REVIEW](REFERENCE_REVIEW.md), [manifest](screenshots/2026-10-24-v2/capture-manifest.json), [до исправления](screenshots/2026-10-24-v2-before/README.md). Captures разделяют compiled source и Git HEAD, используют original fixtures и не содержат личных материалов владельца. Это проверка текущего интерфейса, не окончательное одобрение всей визуальной системы.
+
+### Точный checkpoint для продолжения
+
+- Repo `tupomark/Eng`, branch `codex/product-completion-v2`, draft [PR#1](https://github.com/tupomark/Eng/pull/1). Main baseline `c39997b` сохранён. Перед продолжением читать фактический HEAD и remote, не откатывать последующие docs/proof commits.
+- Полный scope M01–M14/X01–X10/FLOW-01–10 и все178 IDs сохранён; реализованные части и оставшиеся gates перечислены в REQUIREMENTS_TRACEABILITY/risks. Ни один общий процент готовности не присвоен.
+- Незавершённые независимые задачи: durable user-authored lexical catalog за пределами8seed (точные sense/POS IDs, provenance, ручной разбор Inbox и общий lookup/task port); полный command-based cloud repository/projector/sync/restore; trusted AI evidence/streaming и evaluation corpus; полные media/profile backups; remaining task modalities, Grammar/Writing feedback, Memory/Corpus/Immersion/notifications/placement и полный UX/a11y/performance scope.
+- Следующий конкретный независимый slice: **unresolved Inbox → вручную описанное пользователем значение → общий Dictionary → Save → recall**, с явной user provenance, stable sense identity, preview/export/restore и без автоматического доказательства знания. Сначала прочитать текущие dictionary/import/task ports; не добавлять очередной конкурирующий прогресс-store.
+- Реальные внешние gates: test Supabase/Auth/storage и A/B/JWT/two-device checks; подтверждённый API budget/model/terms; dictionary RU/audio/offline rights; реальные ASR/TTS/live/scorer; physical iPhone; авторизованный deploy и backup/restore drill. Secrets в чат/Git не нужны. Платные calls, remote migration и deploy не выполнялись.
+
+### Consolidated verification and captured source
+
+[CI#40142960806](https://github.com/tupomark/Eng/actions/runs/40142960806) on exact `d68d431b1a3020932c3098da6caa08bbbe26e3b5` completed **success**: install, formatting, lint, strict typecheck,288 unit/DB, build and browser gate. Browser summary was **123 passed +1 flaky**, not124 first-attempt successes: the due-clock assertion also matched a hidden retained Core tree. `6e41f25` scopes it to the accessible current main; **6/6 reruns** across both engines (3each,41,1с) then passed. The next CI evaluates the corrected source; the earlier retry is retained in this history.
+
+Final UI build `9760e5a095bcdc689eb8969dff561b87b23c5ecb` passed. A capture run observed WebKit errors from speculative workspace requests during rapid navigation. Common Shell links now disable speculative prefetch; a subsequent complete run captured **39states×2 =78**, zero pageerror and zero horizontal overflow, including real editor focus and network-disabled private Reader. Current captures/manifest refer to that compiled SHA. Original before-images are preserved separately. No reference mockup is rendered as app UI.
+
+All178 distinct requirement IDs and seven traceability columns were checked programmatically. `docs/source/` and `references/` have no diff from baseline. Common private-key/token patterns were checked by filename-only search without printing values; no matching shipped secret was reported. This check does not replace hosted secret/storage/tenant audits. Final formatting/lint/diff checks precede publication of these proof documents; exact subsequent HEAD/CI should be read from Git/PR rather than assumed equal to the compiled capture SHA.

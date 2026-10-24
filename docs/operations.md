@@ -41,14 +41,15 @@ npm run test:e2e
 
 Единого полного профиля backup/restore ещё нет. Используются отдельные возможности:
 
-| Данные               | Доступный путь                    | Что проверить                                                                                                        |
-| -------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Learning v1          | Core export и `/core/restore`     | Preview counts/IDs/context/disputes; confirm merge; повтор без дублей; conflict не меняет данные                     |
-| Tasks/FSRS           | Practice export/restore preview   | Attempts/hints/challenges/rating events/versions, stable replay и exclusion после old backup                         |
-| Materials/Inbox      | Library materials backup/restore  | Chapters/source IDs/anchors/bookmarks/batches/rows; additive merge не затирает current position                      |
-| Writing              | Studio export/restore             | Original/revisions/branches/parents; конфликтующие revisions сохраняются                                             |
-| Goals                | Goals backup/restore              | Stable IDs/revisions, archive, stale proposal protection и counts из реальных events                                 |
-| Imported audio/video | Сохранить исходные файлы отдельно | Complete media/profile archive и automated restore пока не реализованы; не обещать их сохранность одной JSON-кнопкой |
+| Данные                | Доступный путь                            | Что проверить                                                                                                        |
+| --------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Learning v1           | Core export и `/core/restore`             | Preview counts/IDs/context/disputes; confirm merge; повтор без дублей; conflict не меняет данные                     |
+| Tasks/FSRS            | Practice export/restore preview           | Attempts/hints/challenges/rating events/versions, stable replay и exclusion после old backup                         |
+| Materials/Inbox       | Library materials backup/restore          | Chapters/source IDs/anchors/bookmarks/batches/rows; additive merge не затирает current position                      |
+| Writing               | Studio export/restore                     | Original/revisions/branches/parents; конфликтующие revisions сохраняются                                             |
+| Goals                 | Goals backup/restore                      | Stable IDs/revisions, archive, stale proposal protection и counts из реальных events                                 |
+| Saved source passages | Dictionary Full/Deep backup/preview merge | Stable source anchors/IDs and duplicate merge; original learning-v1 excerpt remains separate                         |
+| Imported audio/video  | Сохранить исходные файлы отдельно         | Complete media/profile archive и automated restore пока не реализованы; не обещать их сохранность одной JSON-кнопкой |
 
 Перед существенной migration создать exports всех доступных stores и сохранить исходные books/media. Повреждённые bytes скачать raw; не делать reset или migration поверх них. Restore сначала в отдельном test browser profile/origin: validate → preview → confirmation → counts/values/source links/history reconciliation → reopen → повторный restore. Идентификаторы и disputes сверяются, не только общий счётчик. Fixtures должны быть оригинальными/разрешёнными; private archives не добавляются в Git.
 

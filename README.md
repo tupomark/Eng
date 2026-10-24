@@ -11,6 +11,7 @@
 ```sh
 git clone https://github.com/tupomark/Eng.git
 cd Eng
+git switch codex/product-completion-v2
 npm ci
 npm run dev
 ```
@@ -23,10 +24,12 @@ npm run dev
 - Собственные TXT, вставленный текст и поддерживаемый DRM-free EPUB: preview, главы, структурная позиция, закладки, поиск, настройки чтения, архивирование/удаление и materials backup/restore. EPUB читается как безопасный текст, без исходного сложного оформления/изображений.
 - TXT/CSV/XLSX и поддерживаемая вставка таблицы Reverso: preview, кодировка/разделитель, неоднозначные строки, Smart Inbox, правка, явное учебное намерение и rollback. Импорт не повышает знание и не делает весь список немедленно due.
 - Dictionary Quick → Full Entry → Deep Dive, формы/фразы, выбор значения, редакционные примеры/нюансы/provenance и возврат к тексту. Покрытие — **восемь авторских слов и десять значений**, а не полный словарный сервис; IPA не означает наличие аудио.
+- Несколько приватных source passages для одного значения: повторное сохранение контекста сохраняет learning-v1 bytes и историю; отдельные export/preview-merge и поиск в Library.
 - Общие versioned tasks с отдельными навыками, подсказками, проверкой закрытых заданий и Challenge. Практика, Grammar и Listening используют этот контракт. Открытое предложение без semantic evaluator сохраняется неоценённым.
 - Настоящий FSRS: `ts-fsrs@5.4.2`, FSRS-6, отдельные user rating events и item identity. Старые recognition-самооценки `heuristic-v1` сохраняются; явный bootstrap с preview/backup не превращает их в объективную оценку.
 - Writing: IndexedDB-черновик, autosave, revisions/diff, сохранение конфликтующих версий, restore и переход к шести авторским Grammar concepts с общей практикой. Автоматический feedback Writing не подключён.
 - Listening: реальное воспроизведение авторского синтетического WAV и разрешённых локальных файлов, скорость/A–B/позиция, transcript assistance и короткая локальная запись для shadowing. Это не ASR, live conversation или pronunciation assessment.
+- Settings с раздельными предпочтениями, управляемым reduced motion, подтверждённым удалением local profile и opt-in offline shell. Приватные API/Auth/pages не попадают в service-worker cache; сеть и внешний AI не имитируются offline.
 - Observatory с объяснимыми counts и исходными observations, небольшие авторские semantic relations и локальные Goals. Они не выводят общий «процент владения языком».
 - Восстановление v1 JSON с preview/merge без перезаписи конфликтующей истории; отдельные backups материалов, практики, черновиков и целей. Единый полный backup всех медиа и данных ещё не завершён.
 

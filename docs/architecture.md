@@ -69,3 +69,9 @@ Voice preview не захватывает звук. Listening отдельно �
 Semantic CSS/Tailwind tokens и feature CSS modules сохраняют тёплые читаемые материалы; CSS transform/opacity достаточно для текущей анимации. Дополнительные Motion/Rive/WebGL не вводятся без необходимости и замера.
 
 Vercel/HTTPS/deployment, production security/CSP, provider budget/retention, backup/restore drill и operation/rollback runbook не подтверждаются сборкой или GitHub push. Все live/device/rights gates перечислены в [рисках](risks-and-dependencies.md). Новые screenshots и final test outcomes относятся к конкретной собранной версии; старый зелёный CI не наследуется новым кодом.
+
+## Versioned assessment withdrawal
+
+`application/assessment-withdrawals.ts` is an explicit content-policy registry, separate from pure domain rules. Exact task/version/rubric matching produces stable audit metadata and schedule exclusions; original task and attempt bytes are preserved. `TaskLearningProvider` exposes the corrected projection before persistence and blocks scheduling decisions if correction cannot be committed. Active competence, Observatory and goal/recommendation inputs use the corrected state; raw observations remain inspectable audit. See [assessment withdrawal behavior and checks](feature-notes/assessment-withdrawals.md).
+
+Additional private passages live in an additive validated local store, with idempotent source identity and explicit backup/merge/removal. Saving another passage for an existing sense does not rewrite learning v1 or create evidence. See [saved contexts](feature-notes/saved-contexts.md). These local stores do not imply cloud transactions or account isolation.
