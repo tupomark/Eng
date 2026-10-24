@@ -41,9 +41,9 @@ test("Home due wakes at the deadline and stays consistent across Learn and Core 
     page.getByRole("heading", { name: "1 meaning to revisit", exact: true }),
   ).toBeVisible();
   await page.goto("/core");
-  await expect(page.getByLabel("Review due count")).toHaveText(
-    "1 meanings due for review",
-  );
+  await expect(
+    page.getByRole("main").getByLabel("Review due count"),
+  ).toHaveText("1 meanings due for review");
   await page.goto("/learn");
   await expect(
     page.getByRole("region", { name: "Meaning recognition review" }),
@@ -60,7 +60,7 @@ test("Home due wakes at the deadline and stays consistent across Learn and Core 
     page.getByRole("heading", { name: "1 meaning to revisit", exact: true }),
   ).toBeVisible();
   await page.goto("/core");
-  await expect(page.getByLabel("Review due count")).toHaveText(
-    "1 meanings due for review",
-  );
+  await expect(
+    page.getByRole("main").getByLabel("Review due count"),
+  ).toHaveText("1 meanings due for review");
 });
