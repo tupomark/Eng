@@ -34,7 +34,7 @@ test("own Reader presents real book text in the first viewport at the default re
 }) => {
   await page.goto("/library/import");
   await page
-    .getByLabel("Choose a file")
+    .getByRole("button", { name: "Choose a file", exact: true })
     .setInputFiles(resolve("tests/fixtures/materials/original-reading.txt"));
   await page.getByLabel("Title / source name").fill("A quiet coast");
   await page
