@@ -137,3 +137,60 @@ BUG-01: Library сохраняет видимость недоступных sen
 Проверка S0 выполнена в отдельном worktree `/workspace/lexis-s0-check` на `86dec84`, без незавершённых S1–S3-файлов. `npm run lint`, `npm run typecheck`, `npm test` (**67/67**) и `npm run build` прошли. Первый browser run обнаружил один WebKit-сбой тестового CSS-локатора: во время navigation transition он захватывал скрытый старый и актуальный счётчики. Регрессия уточнена через доступный heading, без изменения проверяемого count или данных. Полный повторный `npm run test:e2e` прошёл **36/36** (18 desktop Chromium + 18 iPhone WebKit), 2,4 минуты, без retry; новые случаи проверили недоступную запись, смешанный поиск/reload/export и due без reload при смене даты/focus. Результат относится к S0 и исправленному тестовому локатору, не ко всем незавершённым продуктовым модулям.
 
 Команда WebKit использует локально извлечённые browser dependencies и `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1` только из-за отсутствия системного ldconfig: реальный WebKit запущен, сценарии выполнены. Физический iPhone по-прежнему awaiting-device-verification. Следующий gate — интеграция общего task/FSRS store, безопасное восстановление v1 и пользовательские сценарии собственных материалов/словаря. Исходные local v1 bytes не мигрируются автоматически.
+
+## 24 октября 2026 — foundations v2 и интеграция новых локальных сценариев
+
+Эта запись фиксирует инженерный checkpoint, не полный выпуск и не результат ещё не законченного общего прогона. Серверная основа ветки `codex/product-completion-v2` — `23fca53`; новые material/Dictionary/practice/Writing/Grammar/knowledge/Listening/AI/Settings/PWA изменения зафиксированы небольшими commits через source anchor **`a3db700`**. Итоговые browser/CI результаты ожидаются и добавляются отдельно. Unit/DB и build выполнены на интегрированном дереве перед фиксацией; последующее изменение offline route — только форматирование. Source snapshots/референсы не переписывались.
+
+### Зафиксированные небольшие изменения
+
+| Commit    | Изменение                                                     | Пользовательское следствие и граница                                                                                                             |
+| --------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `07be796` | Pinned FSRS, bounded parsing и Supabase adapter dependencies  | Реальные packages/API, без force/peer suppression; сами зависимости не интеграция                                                                |
+| `3261543` | Общие tasks/evidence и library-backed FSRS                    | Exact skill/concept, помощь/самостоятельность, stable replay и явный legacy bootstrap                                                            |
+| `144c208` | Validated v1 restore preview/merge                            | Недоступные senses, string event IDs и disputes сохраняются; конфликты не затираются                                                             |
+| `23fca53` | Archive-safe SQL commands, guarded Supabase SSR/Auth adapters | Обычное archive не каскадно стирает evidence; небольшие owner/idempotency/revision commands. Hosted проект и полный cloud repository отсутствуют |
+
+Промежуточные targeted проверки S2: 26 database и 19 unit/SDK-fixture checks прошли в локальной среде с PGlite auth stubs; это не live Supabase JWT/Data API/storage. Старые S0 67/36 и baseline64/30 не выдаются за проверку нового полного продукта.
+
+### Новые связанные local capabilities
+
+- **Материалы/импорт/Reader:** собственный TXT/paste/DRM-free EPUB, bounded ZIP/XML/XLSX, preview/rights consent, vocabulary Inbox, unresolved/manual choices, rollback, structural anchors/bookmarks/search, export/additive restore. Local-only, first XLSX sheet, plaintext EPUB; no cloud/TTS/My Understanding. Детали/targeted evidence — [materials note](feature-notes/materials-ingest.md).
+- **Dictionary/практика:** Quick→Full→Deep и source return, Unicode phrase/form lookup, authored provenance/Explain Differently, четыре lexical practice formats, explicit rating и реальный FSRS; open sentence без semantic evaluator остаётся ungraded. По-прежнему только восемь слов/десять senses, нет licensed live source/audio.
+- **Writing/Grammar:** original/revisions/diff/autosave/caret/scroll, transactional conflict branches и restore; шесть authored Grammar concepts используют common tasks/Challenge/FSRS. Live writing error/style feedback и два устройства ещё отсутствуют.
+- **Observatory/Network/Goals:** defined activity/evidence counts, insufficient-data и excluded audit, repeated independent difficulty patterns, небольшой typed teaching neighbourhood, editable/archivable local goals и подтверждаемая fixed-rule load suggestion. Counts не mastery/CEFR и не AI diagnosis. См. [metric definitions](knowledge-observatory.md).
+- **Listening:** реальный original synthetic sample/private file playback, speed/A–B/position/transcript assistance и opt-in короткая local shadow recording. Нет ASR/live transport/pronunciation grade; media profile export/restore и device gates ещё открыты. Детали — [Listening note](feature-notes/listening.md).
+- **AI/Tutor, Settings и PWA:** завершаются contracts/consent/cancel/quota/unconfigured UI, independent settings/purge и opt-in public offline shell. Наличие этих файлов не означает живого провайдера или успешного offline/update/profile purge gate.
+
+### Проверки и ещё открытый интеграционный gate
+
+Targeted feature suites сообщали: materials 19/19, Writing/Grammar16/16, knowledge12/12, Listening+materials25/25; их область и ограничения описаны в feature notes. Это промежуточные результаты соответствующих рабочих изменений, **не итоговые counts текущего HEAD**. Дополнительные изменения после этих запусков требуют повторной релевантной проверки.
+
+Интегрированный production/browser прогон обнаружил проблемы accessible labels/широких alert locators в новых экранах. Исправления проходят повторную проверку. 24 октября в 11:14 UTC на интегрированном рабочем дереве от `23fca53` общий unit/database прогон прошёл **273/273**, 25 suites, 39 секунд; в 11:15 UTC production build прошёл, включая Settings/Tutor/Listening/offline routes. Общий browser gate на 112 случаях ещё выполняется; его успешный результат здесь не предполагается. Последние правки после этого build требуют релевантного повторного gate. Test files и старый successful CI не заменяют запуск на новом source SHA. Команды окончательного gate: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e` (Chromium/WebKit), затем реальные captures и exact-SHA GitHub CI. Новый formatting step добавлен в CI, без отключения проверок.
+
+README/product/architecture/data-model актуализированы под реальный v2 scope; все 178 ID трассируемости сохранены с конкретным кодом/способом проверки и остаточной границей. `implemented-local` составной строки обозначает описанную часть, не полное закрытие требования. Source anchor `a3db700` связывает зафиксированные изменения; промежуточные рабочие проверки явно отделены от ещё ожидаемого browser/CI результата.
+
+### Точные внешние и независимые оставшиеся задачи
+
+Доступного Supabase-проекта (`projects: []`) и app server secrets нет; AI/model/billing, licensed dictionary/audio и speech/scorer не live-проверены. Physical iPhone — awaiting-device-verification. Deployment/HTTPS, hosted backup/restore/retention и operations также не проверены. Исходники разрешено публиковать в Eng; это не разрешение на расходы/production destructive migrations/публикацию личных материалов.
+
+Кроме внешних gates остаётся независимая инженерная работа: полный remote task/review repository/projector/sync и local→account migration UI; complete profile/media restore и deletion lineage; весь task/mode/search/Memory/Corpus scope; end-to-end tracing всех FLOW; performance/a11y/visual проверки новых workspaces. Отсутствие одного provider не закрывает эти задачи и не является основанием остановиться.
+
+**Следующий конкретный шаг:** закончить текущие AI/Settings/PWA интеграционные правки, собрать production, повторить новые и регрессионные Chromium/WebKit journeys, исправить все реальные failures, получить screenshots, записать точный source SHA/commands/results и сохранить изменения небольшими feature commits. После этого выполнить разрешённый push/PR и новый CI, затем продолжить незавершённые независимые требования по S1–S9.
+
+### Source checkpoint новых features — a3db700
+
+| Commit    | Scope                                 | Уровень/граница                                                                                 |
+| --------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `034f0a3` | Preferences domain/provider           | Local typed settings; full locale/voice/live capabilities не подразумеваются                    |
+| `75e29d9` | Dictionary Full/Deep/context lookup   | Seed-only, no licensed live dictionary/audio                                                    |
+| `b5aa864` | Materials/ingest/Inbox/private Reader | Local text/EPUB/XLSX scope, no cloud sync                                                       |
+| `f811d62` | Practice/FSRS UI/legacy continuation  | Real local scheduler; полный workload/multimodal/device scope отдельно                          |
+| `26d8838` | Writing/Grammar                       | Original/revisions/conflicts/tasks; no live writing feedback                                    |
+| `c3dce57` | Observatory/Network/Goals             | Defined local counts/relations/goals, not calibrated mastery                                    |
+| `806299a` | Listening/local shadowing             | Actual playback/capture slice; not live ASR/TTS/scorer                                          |
+| `365fd97` | AI pipeline/Tutor/quotas              | Contracts/adapters, awaiting-configuration/live verification                                    |
+| `cea2a75` | Settings/local profile purge          | Browser-local only; общий integrated purge gate отдельно                                        |
+| `a3db700` | Opt-in PWA/public shell/navigation    | Original vector/PNG icons; private API/Auth не кэшируются; install/update/device gates отдельно |
+
+Полный browser run **112 случаев** выполняется после этих изменений; промежуточные первые успешные случаи не подменяют итог. Реальные новые captures ещё ожидаются; соответствующие pending секции оставлены в design-system/REFERENCE_REVIEW. Последний точный HEAD перед продолжением следует читать через `git rev-parse HEAD`, поскольку после source anchor отдельно фиксируется документация.

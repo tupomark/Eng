@@ -1,6 +1,6 @@
 # LEXIS: решения и источник истины
 
-Обновлено 22 октября 2026. Этот журнал различает продуктовый контракт, инженерные решения текущего среза и фактически проверенную реализацию. Наличие требования в handoff не означает, что оно уже работает в приложении.
+Обновлено 24 октября 2026. Этот журнал различает продуктовый контракт, инженерные решения текущего среза и фактически проверенную реализацию. Наличие требования в handoff не означает, что оно уже работает в приложении.
 
 ## Приоритет источников
 
@@ -31,7 +31,7 @@
 
 ## Что не утверждено как точный выбор
 
-Next.js/React/TypeScript/Tailwind, Supabase/PostgreSQL, Vercel и GitHub — предпочтительная инженерная реализация, выбранная для текущей основы; сама концепция не зависит от одного провайдера. Не утверждены конкретный AI/ASR/TTS/словарный API, лицензии, тарифы, регион, модель API, библиотека/версия FSRS, production-метрики, финальное лого, шрифт и точные значения токенов. Rive допустим только после обоснования качества и производительности.
+Next.js/React/TypeScript/Tailwind, Supabase/PostgreSQL, Vercel и GitHub — предпочтительная инженерная реализация, выбранная для текущей основы; сама концепция не зависит от одного провайдера. Не утверждены конкретный live AI/ASR/TTS/словарный API, лицензии, тарифы, регион, модель API и production-метрики, финальное лого, шрифт и точные значения токенов. Rive допустим только после обоснования качества и производительности.
 
 Подключённый плагин не подтверждает наличие SDK, credentials, биллинга, удалённого проекта или права использовать материалы. Идентификатор прежнего чата не даёт доступа к его содержимому. Задачи Linear создаются только при наличии действующего инструмента и workspace; пока трассируемость ведётся в репозитории.
 
@@ -77,3 +77,20 @@ TypeScript закреплён на 6.0.3: выбранный typescript-eslint �
 Согласие на публикацию кода/документации в `tupomark/Eng` остаётся действующим. Полное задание не разрешает платные подписки/API расходы, разрушительные production-миграции или публикацию личных текстов/аудио. Точные поставщики, live model IDs, тарифы, лицензии, технические budgets и production configuration выбираются с актуальной проверкой; конкретное техническое предложение не переименовывается в исторически утверждённое решение.
 
 Визуальный контракт не изменён: пять доступных WebP и обзор, warm graphite/espresso/sand, выразительная мягкая Voice membrane, спокойный фон текста и readable EN/RU/IPA. Тринадцать намеренно исключённых оригиналов не считаются просмотренными. Пиксельное совпадение и hardware Safari остаются отдельными gates.
+
+## Инженерные решения 23–24 октября 2026
+
+Это новые инженерные решения в рамках полного контракта владельца, не попытка выдать технический выбор за исторически утверждённый дизайн. Влияние и проверки перечислены в [PROGRESS](PROGRESS.md).
+
+| Основание            | Решение                                                                                                                                                  | Влияние и граница                                                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| FSRS-01, LEARN-01/02 | `ts-fsrs@5.4.2` / FSRS-6, pinned policy/параметры, typed sense/concept+skill+prompt-family item                                                          | Actual library-backed local scheduler; legacy recognition-only bootstrap с preview/backup; не mastery. Подробная политика в fsrs-and-tasks |
+| MIG-01, DATA-04      | Сохранить local v1, добавить typed tasks store; additive restore с preview/conflict rejection; stable legacy UUID mapping; SQL archive отдельно от purge | Повреждённые bytes и история не перезаписываются; actual local→account migration/hosted deletion ещё не закрыты                            |
+| M02/M09, SEC-02      | Bounded ZIP/XML parsers и inert plaintext EPUB вместо embedded active HTML; частичный XLSX values reader                                                 | Собственные материалы/Inbox без upload/AI; ограничения файлов, first-sheet only и текстовая EPUB fidelity видимы                           |
+| M11/M14, ARCH-05     | Native IndexedDB revisions/branches для drafts; шесть авторских GrammarConcept с common task contract                                                    | Конфликт не стирает исходник; принятие AI-коррекции не самостоятельное evidence; live feedback ещё отсутствует                             |
+| M07/GOAL-01          | Versioned metric definitions и реальные independent/assisted/excluded counts; local goal proposal только после confirm                                   | Нет invented mastery/CEFR; fixed-rule предложение не называется AI Tutor                                                                   |
+| M12/X05              | Реальный original synthetic WAV с attribution, local media blobs и opt-in short shadowing без grade                                                      | Actual playback/capture slice, не ASR/TTS/live Voice/scorer; hardware проверка отдельно                                                    |
+| AI-01/05             | Нет default model/цены/автовключения API: explicit server config, budget/quota reservation и runtime+semantic validation                                 | OpenAI Responses adapter не подтверждает модель 6.1/доступ/биллинг/live quality; без конфигурации честная недоступность                    |
+| PWA-02/03            | Opt-in public-shell cache, private data в отдельных local stores, coordinated purge и безопасное manual update                                           | Текущая реализация проходит browser gate; private API/Auth не превращаются в shared offline cache; hosted/device gate отдельно             |
+
+Визуальное направление не менялось; новые workspaces используют существующие semantic tokens и нейтральную текстовую поверхность. Все пять WebP и overview повторно открыты в этой итерации до визуальных изменений. Свежие screenshots и финальный exact-SHA browser/CI результат фиксируются отдельно, не наследуются baseline.
