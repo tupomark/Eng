@@ -566,3 +566,75 @@ test("an unresolved import becomes an explicit own meaning and study intention w
     ),
   ).toEqual(learning);
 });
+
+test("an explicit own sense wins an ambiguous Reader return without being reassigned to the editorial spelling", async ({
+  page,
+}) => {
+  const ownDefinition =
+    "To remain in a chosen place a little longer by choice.";
+  await page.goto("/library/meanings");
+  await createMeaning(page, {
+    lemma: "linger",
+    partOfSpeech: "verb",
+    definition: ownDefinition,
+  });
+  const catalog = await readCatalog(page);
+  const senseId = catalog.entries[0].senses[0].id;
+  await page.goto("/reader");
+  const token = page
+    .getByRole("button", { name: "Look up linger", exact: true })
+    .first();
+  const tokenId = await token.getAttribute("id");
+  expect(tokenId).not.toBeNull();
+  const sourceSentence = await token.evaluate((element) =>
+    element.closest("[data-reader-sentence]")?.textContent?.trim(),
+  );
+  expect(sourceSentence).toContain("linger");
+  await token.click();
+  const quick = page.getByRole("dialog", { name: "Dictionary", exact: true });
+  await expect(quick).toBeVisible();
+  await expect(quick.getByRole("radio")).toHaveCount(0);
+  await quick
+    .getByRole("button", { name: "Search Dictionary", exact: true })
+    .click();
+  const results = page.getByRole("region", {
+    name: "Dictionary search results",
+    exact: true,
+  });
+  await expect(results.getByRole("button")).toHaveCount(2);
+  await results.getByRole("button").filter({ hasText: ownDefinition }).click();
+  await expect(page.getByText(/YOUR DEFINITION · UNVERIFIED/u)).toBeVisible();
+  const ownSense = page.getByRole("radio");
+  await expect(ownSense).toHaveCount(1);
+  await expect(ownSense).not.toBeChecked();
+  await ownSense.check();
+  expect(new URL(page.url()).searchParams.get("sense")).toBe(senseId);
+  await page
+    .getByRole("link", { name: "Return to your source", exact: true })
+    .click();
+  await expect(quick).toBeVisible();
+  await expect(quick.getByRole("radio")).toHaveCount(1);
+  await expect(quick.getByRole("radio")).toBeChecked();
+  await expect(quick.getByRole("radio")).toHaveValue(senseId);
+  await expect(quick.locator("blockquote")).toContainText(sourceSentence!);
+  await expect(
+    quick.getByText(/Your own note · not independently verified/u),
+  ).toBeVisible();
+  expect(new URL(page.url()).hash).toBe(`#${tokenId}`);
+  expect(
+    await page.evaluate(() => localStorage.getItem("lexis.learning.v1")),
+  ).toBeNull();
+  await page.reload();
+  await expect(quick).toBeVisible();
+  await expect(quick.getByRole("radio")).toBeChecked();
+  await expect(quick.getByRole("radio")).toHaveValue(senseId);
+  await expect(quick.locator("blockquote")).toContainText(sourceSentence!);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(`#${tokenId}`)).toBeFocused();
+  await expect(page.locator(`#${tokenId}`)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator(`#${tokenId}`)).toBeInViewport();
+  expect((await readCatalog(page)).entries).toEqual(catalog.entries);
+});

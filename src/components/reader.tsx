@@ -164,8 +164,8 @@ export function Reader() {
         const index = sectionMatch ? Number(sectionMatch[1]) : -1;
         if (index < 0 || index >= sections.length) return;
         setChosenSection(index);
-        const entry = findEntry(context.surface);
         const selected = params.get("sense") ?? "";
+        const entry = findEntry(context.surface, selected || undefined);
         setLookup({
           word: context.surface,
           context: context.excerpt,

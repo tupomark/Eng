@@ -70,7 +70,8 @@ export function DictionaryWorkspace({
   if (
     context &&
     entry &&
-    catalog.findEntry(context.surface)?.lexeme.id === entry.lexeme.id &&
+    catalog.findEntry(context.surface, selectedSenseId)?.lexeme.id ===
+      entry.lexeme.id &&
     entry.senses.some((sense) => sense.id === selectedSenseId)
   ) {
     const returnUrl = new URL(backHref, "https://lexis.invalid");

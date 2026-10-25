@@ -216,18 +216,12 @@ export function createUserLexicalEntry(
   });
 }
 /** Content-exact only: no synonym inference, POS merging or external-ID mapping. */
-function contentIdentity(entry: UserLexicalEntry): string {
+function duplicateLexemeIdentity(entry: UserLexicalEntry): string {
   return JSON.stringify([
     normalizeLookupQuery(entry.lexeme.lemma),
     entry.lexeme.partOfSpeech,
     entry.lexeme.ipa,
     entry.forms,
-    entry.senses.map(({ definition, translation, example, collocations }) => [
-      definition,
-      translation,
-      example,
-      collocations,
-    ]),
   ]);
 }
 function senseContent(sense: Sense): string {
@@ -250,13 +244,62 @@ export function findDuplicateUserLexicalEntry(
   state: UserLexicalCatalog,
   entry: UserLexicalEntry,
 ): UserLexicalEntry | null {
-  const validated = parseUserLexicalCatalog(state);
-  const candidate = parseEntry(entry);
-  return (
-    validated.entries.find(
-      (item) => contentIdentity(item) === contentIdentity(candidate),
-    ) ?? null
+  return duplicateEntryInCatalog(
+    parseUserLexicalCatalog(state),
+    parseEntry(entry),
   );
+}
+function duplicateEntryInCatalog(
+  validated: UserLexicalCatalog,
+  candidate: UserLexicalEntry,
+): UserLexicalEntry | null {
+  if (candidate.senses.length === 1)
+    return duplicateSenseInCatalog(validated, candidate)?.entry ?? null;
+  const matching = validated.entries.filter(
+    (item) =>
+      duplicateLexemeIdentity(item) === duplicateLexemeIdentity(candidate) &&
+      JSON.stringify(item.senses.map(senseContent)) ===
+        JSON.stringify(candidate.senses.map(senseContent)),
+  );
+  if (matching.length > 1) throw ambiguousDuplicate();
+  return matching[0] ?? null;
+}
+function ambiguousDuplicate(): Error {
+  return new Error(
+    "Several original meanings match this note exactly. Open Own dictionary and choose the intended meaning. No new meaning was created or history reassigned.",
+  );
+}
+/**
+ * A retry may match a later sense in an entry that has since gained meanings.
+ * Equal-looking restored histories remain distinct, requiring an explicit choice.
+ */
+export function findDuplicateUserLexicalSense(
+  state: UserLexicalCatalog,
+  entry: UserLexicalEntry,
+): { entry: UserLexicalEntry; senseId: string } | null {
+  return duplicateSenseInCatalog(
+    parseUserLexicalCatalog(state),
+    parseEntry(entry),
+  );
+}
+function duplicateSenseInCatalog(
+  validated: UserLexicalCatalog,
+  candidate: UserLexicalEntry,
+): { entry: UserLexicalEntry; senseId: string } | null {
+  if (candidate.senses.length !== 1)
+    throw new Error("Choose one meaning when checking a new personal note.");
+  const matching = validated.entries.flatMap((item) =>
+    duplicateLexemeIdentity(item) === duplicateLexemeIdentity(candidate)
+      ? item.senses
+          .filter(
+            (sense) =>
+              senseContent(sense) === senseContent(candidate.senses[0]),
+          )
+          .map((sense) => ({ entry: item, senseId: sense.id }))
+      : [],
+  );
+  if (matching.length > 1) throw ambiguousDuplicate();
+  return matching[0] ?? null;
 }
 export function addUserLexicalEntry(
   state: UserLexicalCatalog,
@@ -275,7 +318,7 @@ export function addUserLexicalEntry(
     return current;
   }
   // A new delivery of the exact same authored content reuses the original IDs.
-  if (findDuplicateUserLexicalEntry(current, candidate)) return current;
+  if (duplicateEntryInCatalog(current, candidate)) return current;
   return parseUserLexicalCatalog({
     ...current,
     revision: current.revision + 1,
@@ -319,10 +362,11 @@ export function appendUserLexicalSense(
       );
     return current;
   }
-  const repeated = entry.senses.some(
+  const repeated = entry.senses.filter(
     (sense) => senseContent(sense) === senseContent(candidate),
   );
-  if (repeated) return current;
+  if (repeated.length > 1) throw ambiguousDuplicate();
+  if (repeated.length === 1) return current;
   return parseUserLexicalCatalog({
     ...current,
     revision: current.revision + 1,

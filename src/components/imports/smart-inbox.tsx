@@ -7,7 +7,6 @@ import { useMaterials } from "@/components/materials/use-materials";
 import { useLexicalCatalog } from "@/components/lexical-catalog-provider";
 import { LexicalCatalogEditor } from "@/components/lexical-catalog-editor";
 import { buildDictionaryHref } from "@/infrastructure/dictionary/context-navigation";
-import { normalizeImportTerm } from "@/domain/imports/lexical-import";
 import type { ImportDisposition, ImportRow } from "@/domain/imports/types";
 import styles from "@/components/materials/materials.module.css";
 
@@ -192,21 +191,17 @@ export function SmartInbox() {
           )}
           <ul className={styles.list}>
             {visible.map((row) => {
-              const entries = catalog.entries.filter(
-                (candidate) =>
-                  normalizeImportTerm(candidate.lexeme.lemma) ===
-                    normalizeImportTerm(row.term) ||
-                  catalog.userEntries.some(
-                    (item) =>
-                      item.lexeme.id === candidate.lexeme.id &&
-                      item.forms.some(
-                        (form) =>
-                          normalizeImportTerm(form) ===
-                          normalizeImportTerm(row.term),
-                      ),
-                  ) ||
-                  candidate.senses.some((sense) => sense.id === row.senseId),
-              );
+              const entries = [...catalog.matchingEntries(row.term)];
+              const linkedEntry = row.senseId
+                ? catalog.findSense(row.senseId)?.entry
+                : null;
+              if (
+                linkedEntry &&
+                !entries.some(
+                  (entry) => entry.lexeme.id === linkedEntry.lexeme.id,
+                )
+              )
+                entries.push(linkedEntry);
               const meanings = entries.flatMap((entry) =>
                 entry.senses.map((sense) => ({ entry, sense })),
               );

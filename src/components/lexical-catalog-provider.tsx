@@ -14,7 +14,7 @@ import {
   appendUserLexicalSense,
   createUserLexicalEntry,
   emptyUserLexicalCatalog,
-  findDuplicateUserLexicalEntry,
+  findDuplicateUserLexicalSense,
   type UserLexicalCatalog,
   type UserLexicalEntry,
   type UserLexicalPartOfSpeech,
@@ -61,7 +61,11 @@ interface CatalogValue {
   ready: boolean;
   error: string;
   lookup: LocalCatalogDictionaryLookup;
-  findEntry(query: string): LookupDictionaryEntry | null;
+  matchingEntries(query: string): readonly LookupDictionaryEntry[];
+  findEntry(
+    query: string,
+    selectedSenseId?: string,
+  ): LookupDictionaryEntry | null;
   findSense(id: string): { entry: LookupDictionaryEntry; sense: Sense } | null;
   reload(): void;
   snapshot(): Snapshot | null;
@@ -165,12 +169,12 @@ export function LexicalCatalogProvider({
           senseId: `user-sense-${crypto.randomUUID()}`,
           at: new Date().toISOString(),
         });
-        const duplicate = findDuplicateUserLexicalEntry(before.state, entry);
+        const duplicate = findDuplicateUserLexicalSense(before.state, entry);
         if (duplicate) {
           setError("");
           return {
-            entry: duplicate,
-            senseId: duplicate.senses[0].id,
+            entry: duplicate.entry,
+            senseId: duplicate.senseId,
             added: false,
           };
         }
@@ -232,12 +236,22 @@ export function LexicalCatalogProvider({
     () => buildLocalCatalogExactIndex(entries),
     [entries],
   );
+  const matchingEntries = useCallback(
+    (query: string) => exactIndex.get(normalizeLookupQuery(query)) ?? [],
+    [exactIndex],
+  );
   const findEntry = useCallback(
-    (query: string) => {
-      const matches = exactIndex.get(normalizeLookupQuery(query)) ?? [];
+    (query: string, selectedSenseId?: string) => {
+      const matches = matchingEntries(query);
+      if (selectedSenseId)
+        return (
+          matches.find((entry) =>
+            entry.senses.some((sense) => sense.id === selectedSenseId),
+          ) ?? null
+        );
       return matches.length === 1 ? matches[0] : null;
     },
-    [exactIndex],
+    [matchingEntries],
   );
   const sensesById = useMemo(
     () =>
@@ -260,6 +274,7 @@ export function LexicalCatalogProvider({
       error,
       lookup,
       findEntry,
+      matchingEntries,
       findSense,
       reload,
       snapshot: () => current.current,
@@ -274,6 +289,7 @@ export function LexicalCatalogProvider({
       error,
       lookup,
       findEntry,
+      matchingEntries,
       findSense,
       reload,
       commit,

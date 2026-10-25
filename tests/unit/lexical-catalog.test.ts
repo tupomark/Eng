@@ -5,6 +5,7 @@ import {
   createUserLexicalEntry,
   emptyUserLexicalCatalog,
   findDuplicateUserLexicalEntry,
+  findDuplicateUserLexicalSense,
   mergeUserLexicalCatalog,
   parseUserLexicalCatalog,
   previewUserLexicalRestore,
@@ -99,6 +100,81 @@ describe("private user-authored lexical catalog", () => {
         definition: "The ability to notice useful accidental discoveries.",
       }),
     ).toEqual(next);
+  });
+  it("reuses the original first or later meaning after an entry gains another sense", () => {
+    const state = addUserLexicalEntry(emptyUserLexicalCatalog(), entry());
+    const expanded = appendUserLexicalSense(state, "user-lexeme-one", {
+      id: "user-sense-later",
+      definition: "The ability to notice useful accidental discoveries.",
+    });
+    const repeatedFirst = entry("retry-first");
+    expect(
+      findDuplicateUserLexicalSense(expanded, repeatedFirst),
+    ).toMatchObject({
+      entry: { lexeme: { id: "user-lexeme-one" } },
+      senseId: "user-sense-one",
+    });
+    const repeatedLater = createUserLexicalEntry({
+      lexemeId: "user-lexeme-retry-later",
+      senseId: "user-sense-retry-later",
+      lemma: "serendipity",
+      partOfSpeech: "noun",
+      definition: "The ability to notice useful accidental discoveries.",
+      at,
+    });
+    expect(
+      findDuplicateUserLexicalSense(expanded, repeatedLater),
+    ).toMatchObject({
+      entry: { lexeme: { id: "user-lexeme-one" } },
+      senseId: "user-sense-later",
+    });
+    expect(addUserLexicalEntry(expanded, repeatedFirst)).toEqual(expanded);
+    expect(addUserLexicalEntry(expanded, repeatedLater)).toEqual(expanded);
+    expect(expanded.entries).toHaveLength(1);
+    expect(expanded.entries[0].senses).toHaveLength(2);
+  });
+  it("requires explicit identity choice when separately restored histories contain equal notes", () => {
+    const state = addUserLexicalEntry(emptyUserLexicalCatalog(), entry());
+    const restored = mergeUserLexicalCatalog(state, {
+      version: 1,
+      revision: 1,
+      entries: [entry("historical")],
+    });
+    const candidate = entry("new-retry");
+    expect(() => findDuplicateUserLexicalSense(restored, candidate)).toThrow(
+      "choose the intended meaning",
+    );
+    expect(() => addUserLexicalEntry(restored, candidate)).toThrow(
+      "No new meaning was created",
+    );
+    expect(restored.entries.map((item) => item.senses[0].id)).toEqual([
+      "user-sense-one",
+      "user-sense-historical",
+    ]);
+    const sameEntryDuplicates = parseUserLexicalCatalog({
+      ...state,
+      entries: [
+        {
+          ...state.entries[0],
+          senses: [
+            state.entries[0].senses[0],
+            {
+              ...state.entries[0].senses[0],
+              id: "user-sense-historical-same-entry",
+            },
+          ],
+        },
+      ],
+    });
+    expect(() =>
+      appendUserLexicalSense(sameEntryDuplicates, "user-lexeme-one", {
+        id: "user-sense-new-retry",
+        definition: candidate.senses[0].definition,
+        translation: candidate.senses[0].translation,
+        example: candidate.senses[0].example,
+      }),
+    ).toThrow("choose the intended meaning");
+    expect(sameEntryDuplicates.entries[0].senses).toHaveLength(2);
   });
   it("preserves original Unicode and honest missing IPA/translation/example", () => {
     const item = createUserLexicalEntry({
