@@ -1,6 +1,6 @@
 # Архитектура LEXIS
 
-Актуальная инженерная реализация v2, 24 октября 2026. Модульный монолит Next.js App Router / React / strict TypeScript сохраняет существующую работу. Полный продукт подключается совместимыми сценариями S0–S9; прежний локальный vertical slice больше не является конечной целью. Приоритет источников — в [решениях](DECISIONS_AND_SOURCE_OF_TRUTH.md), реальная готовность — в [трассируемости](REQUIREMENTS_TRACEABILITY.md) и [PROGRESS](PROGRESS.md).
+Актуальная инженерная реализация v2, 25 октября 2026. Модульный монолит Next.js App Router / React / strict TypeScript сохраняет существующую работу. Полный продукт подключается совместимыми сценариями S0–S9; прежний локальный vertical slice больше не является конечной целью. Приоритет источников — в [решениях](DECISIONS_AND_SOURCE_OF_TRUTH.md), реальная готовность — в [трассируемости](REQUIREMENTS_TRACEABILITY.md) и [PROGRESS](PROGRESS.md).
 
 ## Слои и зависимости
 
@@ -46,6 +46,18 @@ EPUB/XLSX parsing ограничивает compressed/expanded size, entries, pa
 
 Reader хранит document/version/chapter/paragraph/character anchor, отдельно appearance prefs и bookmarks. Native selection остаётся текстовым Range. Dictionary lookup передаёт surface form и минимальный context; явный sense choice не превращает неизвестный импорт в первый seed sense. Full/Deep и Writing→Grammar используют bounded tab-local context/allowlisted return paths. Личные excerpts не помещаются в URL. Это ограниченный persistent context, не полная cross-device memory.
 
+## Пользовательский лексический каталог
+
+`src/domain/lexical-catalog.ts` хранит определения отдельно от намерений и учебных наблюдений. `lexis.lexical-catalog.v1` содержит внутренние `user-lexeme-*`/`user-sense-*` IDs, POS, явные формы, оригинальные значения и provenance `user-authored`. Создание и добавление значения к явно выбранной лексеме не записывают evidence. Исходное содержание не редактируется незаметно: другой смысл получает отдельный ID, прежние task definitions и история остаются неизменными. Восстановленный пользовательский файл не может занять namespace редакционных значений.
+
+`LexicalCatalogProvider` объединяет редакционные и пользовательские записи через общий `DictionaryLookupPort`. Источники и одинаково написанные POS не сливаются; неоднозначность требует выбора. Quick View, Full Entry, Library, Command, Review, Core и Observatory разрешают один и тот же sense ID. Semantic Network показывает отсутствие подтверждённых связей для новой записи, а не выдумывает их. Deep Dive для пользовательской записи не обещает редакционных нюансов или аудио.
+
+Memoized exact index обслуживает проверки токенов Reader и кандидатов Inbox, не сканируя все определения для каждого слова/строки. Текстовый поиск остаётся bounded local lookup; списки Dictionary/каталога выдаются порциями. Выбранный sense при возврате в Reader проверяется среди подходящих исходной форме записей, поэтому совпадение написания с редакционным словом не сбрасывает явный выбор.
+
+`catalog-tasks.ts` создаёт common tasks с `source.kind=user`: закрытый ответ проверяет воспроизведение пользовательского ключа, не подтверждает точность определения. Evidence относится только к выполненному skill; FSRS использует обычную target/skill/prompt-family identity. Открытое предложение без semantic evaluator остаётся ungraded. Smart Inbox связывает строку с определением отдельно от явного Save; отказ второй записи сообщает о частичном результате и допускает повтор.
+
+Каталог ограничен 4 000 000 serialized UTF-16 code units, 2 000 entries, 10 000 senses и 30 senses на entry. Runtime validation, stale-byte guard и purge barrier сохраняют прежние bytes при ошибке. Additive restore показывает preview, сохраняет IDs и блокирует конфликт содержания одного ID. Это одно browser-local хранилище, не облачная транзакция или account isolation. При повреждении доступен original export/reload; отдельный reset только этого store ещё не реализован. Подробности и тестовые границы — в [user meanings](feature-notes/user-meanings.md).
+
 ## Серверная основа и незакрытый cloud gate
 
 `src/infrastructure/supabase` содержит текущие SSR APIs, request-scoped clients, no-store session handling, trusted `getUser`, origin/redirect guards и server-only RPC client. `/account`, `/auth/callback`, `/api/account`, `/api/learning/command` имеют явное unconfigured состояние. Клиент передаёт небольшие команды с idempotency/revision, а не полный профиль или доверенный owner/score/provider.
@@ -60,7 +72,7 @@ Dictionary lookup, AI evaluation/tutoring, ASR/TTS/live/scorer имеют раз
 
 Voice preview не захватывает звук. Listening отдельно воспроизводит настоящий sample/private files, фиксирует transcript assistance и короткий opt-in shadow recording; он не доказывает live transport/ASR/TTS/pronunciation. Микрофон разрешается route-specific только там, где есть capture. Имена/значения секретов не выдаются в клиент, logs или telemetry; raw books/drafts/audio не уходят во внешнюю аналитику.
 
-Полная purge-coordination и opt-in offline workspace развиваются отдельным срезом. Service worker должен кэшировать только public shell/static assets; private API/Auth/materials не становятся общим cache. Реальная offline/update/account-switch проверка и physical iPhone остаются отдельными gates; localStorage сам по себе не означает PWA.
+Локальные purge-coordination и opt-in offline workspace реализованы и проверены browser journeys, включая остановку поздних writes, удаление собственных stores/cache/worker и чтение локального материала с выключенной сетью. Service worker кэширует public shell/static assets; private API/Auth/pages не становятся общим cache, а материал остаётся в browser storage. Ошибка удаления сохраняет блокирующий marker и сообщает о частичном результате. Это local single-device scope: полный update/version-compatibility, account-switch isolation, hosted deletion и physical iPhone остаются отдельными gates. Результаты конкретных source/checks — в [PROGRESS](PROGRESS.md); localStorage сам по себе не означает PWA.
 
 ## Toolchain, CI и выпуск
 

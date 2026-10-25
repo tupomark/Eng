@@ -15,17 +15,17 @@ LEXIS — персональная среда английского для об
 
 ## Навигация и сценарии
 
-| Раздел  | Назначение и локальный вход                                         | Остаточная граница                                          |
-| ------- | ------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Home    | Продолжение чтения, due и короткий следующий шаг                    | Полный cross-module resume и grounded Tutor recommendations |
-| Library | TXT/EPUB, материалы, saved senses, import/Inbox                     | Cloud, широкое dictionary coverage                          |
-| Learn   | Legacy self-review и общая практика/FSRS, Writing/Grammar/Listening | Все форматы/режимы и живые speech/evaluation capabilities   |
-| Tutor   | Явный Voice preview и отдельный scoped text Tutor                   | Настройка provider/budget, live-проверка                    |
-| Core    | История/Challenge, Observatory, semantic neighbourhood, Goals       | Это наблюдения, не общий CEFR/mastery                       |
+| Раздел  | Назначение и локальный вход                                              | Остаточная граница                                          |
+| ------- | ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Home    | Продолжение чтения, due и короткий следующий шаг                         | Полный cross-module resume и grounded Tutor recommendations |
+| Library | TXT/EPUB, материалы, saved senses, собственные определения, import/Inbox | Cloud, широкое dictionary coverage                          |
+| Learn   | Legacy self-review и общая практика/FSRS, Writing/Grammar/Listening      | Все форматы/режимы и живые speech/evaluation capabilities   |
+| Tutor   | Явный Voice preview и отдельный scoped text Tutor                        | Настройка provider/budget, live-проверка                    |
+| Core    | История/Challenge, Observatory, semantic neighbourhood, Goals            | Это наблюдения, не общий CEFR/mastery                       |
 
-На телефоне остаётся пять пунктов навигации, на desktop — боковая. Reader и Voice имеют отдельные рабочие пространства. Command открывает реальные маршруты и авторские слова; полный поиск по книгам/drafts/concepts/приватным индексам ещё не реализован.
+На телефоне остаётся пять пунктов навигации, на desktop — боковая. Reader и Voice имеют отдельные рабочие пространства. Command открывает реальные маршруты, редакционные слова и собственные определения; полный поиск по книгам/drafts/concepts/приватным индексам ещё не реализован.
 
-Собственный текст/EPUB → выделение → Dictionary Quick/Full/Deep → явный sense/save → практика/FSRS → Core доступен локально в пределах десяти авторских senses. Импорт → preview/ambiguity → Inbox → выбор изучения не создаёт массового due. Reader сохраняет структурный anchor; ограниченный session-local ledger возвращает из Dictionary к источнику, без личных excerpts в URL. Это не долговременный облачный provenance.
+Собственный текст/EPUB → выделение → Dictionary Quick/Full/Deep → явный sense/save → практика/FSRS → Core работает локально с десятью редакционными senses и пользовательским каталогом. Собственное определение помечено как `user-authored`, не выдаётся за проверенный словарный факт и не получает вымышленные Deep Dive/audio данные. Закрытая практика проверяет воспроизведение своей записи; её результат не подтверждает точность исходного определения. Импорт → preview/ambiguity → Inbox → выбор изучения не создаёт массового due. Неизвестную строку можно вручную описать с отдельным POS/sense ID, связать с Inbox и отдельно сохранить для изучения. Новое определение, import и save сами по себе не создают evidence. Разные значения и одинаково написанные POS/источники сохраняют самостоятельную историю. Reader сохраняет структурный anchor; ограниченный session-local ledger возвращает из Dictionary к источнику, без личных excerpts в URL. Это не долговременный облачный provenance.
 
 Writing сохраняет исходник, revisions, caret/scroll и конфликтующие ветви; Grammar даёт шесть авторских concepts и общие tasks. Автоматический writing feedback ещё не подключён. Listening воспроизводит реальный sample и локальные файлы; transcript меняет assistance provenance, shadowing записывает короткий локальный повтор без оценки произношения. Observatory и Goals используют реальные observations с опубликованными определениями и исключением disputed/assisted данных.
 
@@ -33,7 +33,7 @@ Writing сохраняет исходник, revisions, caret/scroll и конф
 
 ## Локальный режим и незавершённый scope
 
-Stores относятся к одной browser-local идентичности: это не Auth, облачная копия, гарантированное хранение или безопасная многопользовательская синхронизация. Ошибки quota/повреждения/устаревшей вкладки не должны давать ложный успех. Backup/restore отдельных stores существует частями; единый полный backup всех медиа/профиля ещё не завершён.
+Stores относятся к одной browser-local идентичности: это не Auth, облачная копия, гарантированное хранение или безопасная многопользовательская синхронизация. Ошибки quota/повреждения/устаревшей вкладки не должны давать ложный успех. Backup/restore отдельных stores существует частями, включая validated preview/additive merge собственного словаря. Конфликт ID не перезаписывает исходное определение. При повреждении этого store доступны raw export/reload и отдельно подтверждённый полный profile purge; granular reset/recovery только каталога ещё отсутствует. Единый полный backup всех медиа/профиля ещё не завершён.
 
 Auth/atomic SQL commands и AI adapters — отдельные основы. Нет подтверждённых app secrets/доступного Supabase-проекта, лицензированного широкого словаря, AI/API бюджета, ASR/TTS/live transport или specialized pronunciation scorer. SDK/экран/миграция не подтверждают соединение. Voice preview остаётся прототипом; local shadowing — настоящая media-функция с более узким scope.
 

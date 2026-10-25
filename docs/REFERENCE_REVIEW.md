@@ -1,5 +1,18 @@
 # Визуальная сверка LIGHT-пакета — 22 октября 2026
 
+## Дополнение 25 октября — личные определения
+
+Production source `754323bd3b2d958f070e1e7945487da4d5ffdb54` снят новым [capture script](../scripts/capture-user-meanings.mjs): шесть настоящих состояний × два движка. [Manifest](screenshots/2026-10-25-user-meanings/capture-manifest.json) фиксирует actual actions, engine/viewport/scale, HEAD отдельно от compiled source и реальные данные: одна личная заметка, одно сохранённое значение, одна recall-попытка с источником `user`, один rating event и ноль legacy evidence.
+
+- [Ввод](screenshots/2026-10-25-user-meanings/iphone-webkit-own-meaning-draft.png): native labels/focus и свёрнутые дополнительные поля.
+- [Dictionary](screenshots/2026-10-25-user-meanings/iphone-webkit-dictionary-own-meaning.png): headword и явный unverified source, без вымышленного IPA/audio.
+- [Recall](screenshots/2026-10-25-user-meanings/iphone-webkit-recall-own-answer-key.png): matching собственной заметке, отдельные user rating и Challenge.
+- [Library](screenshots/2026-10-25-user-meanings/iphone-webkit-library-saved-own-meaning.png) и [Observatory](screenshots/2026-10-25-user-meanings/iphone-webkit-observatory-own-recall.png): источник и конкретный наблюдаемый навык, без общего mastery/CEFR.
+
+Эти mobile кадры и desktop созданная форма действительно открыты. Сохранены тёплая нейтральная палитра, читаемые почти непрозрачные поверхности и мягкие формы; фоновые изображения/яркие градиенты не вводились. Оба итоговых result — `captured`, zero pageerror/overflow. [Первый manifest](screenshots/2026-10-25-user-meanings/before-prefetch-fix-manifest.json) сохраняет WebKit prefetch pageerror. Нет утверждения о просмотре каждого из12 кадров, contrast/SR/200% zoom, physical iPhone или финальном одобрении дизайна.
+
+Ниже сохранена историческая сверка 22–24 октября.
+
 Все пять WebP и обзорный JPG действительно открыты инструментом просмотра изображений до начала разработки. Перечень и SHA архива — в [аудите](HANDOFF_AUDIT_2026-10-22.md). Ни один макет не обозначен финальным утверждённым экраном. Письменные требования имеют приоритет, в особенности снижение заметности фона за текстом.
 
 | Изображение                                                                                        | Что увидено и перенесено как принцип                                                     | Что не копируется                                                                              |

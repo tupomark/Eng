@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-10-25T16:52:07.328Z",
+  "sourceHead": "754323bd3b2d958f070e1e7945487da4d5ffdb54",
+  "builtSourceHead": "754323bd3b2d958f070e1e7945487da4d5ffdb54",
+  "hasUncommittedChanges": true,
+  "origin": "http://127.0.0.1:3000",
+  "content": "Fresh isolated local profiles. Original harbour notes authored through the UI, then one real recall submission and user rating. No owner materials, hidden scores or external providers.",
+  "limitations": [
+    "User-authored definitions are not independently verified dictionary facts. A successful recall matches the learner's own answer key only.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone verification.",
+    "Captures do not establish full accessibility, 200% zoom, screen reader, composited contrast, performance or final owner visual approval.",
+    "Local browser persistence is not hosted Auth, cloud backup, two-device sync or a live AI/dictionary integration."
+  ],
+  "browsers": [
+    {
+      "name": "desktop-chromium",
+      "viewport": {
+        "width": 1440,
+        "height": 1050
+      },
+      "deviceScaleFactor": 1,
+      "reducedMotion": "reduce",
+      "captures": [
+        {
+          "filename": "desktop-chromium-own-meaning-draft.png",
+          "detail": "Actual definition input at the current editor focus; no study intention or knowledge event exists.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-own-meaning-created.png",
+          "detail": "Metadata created by a real form submission; no review or evidence is created by authoring.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-dictionary-own-meaning.png",
+          "detail": "The exact private user-authored sense appears with explicit unverified provenance; no editorial authority or audio is implied.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-recall-own-answer-key.png",
+          "detail": "One actual independent recall response, matched against the user's own key. This does not verify the definition or another skill.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-library-saved-own-meaning.png",
+          "detail": "The saved sense remains searchable with its user provenance after a real recall/rating; source and evidence have separate identities.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "desktop-chromium-observatory-own-recall.png",
+          "detail": "A single real recall observation feeds the common Observatory; no fabricated proficiency percentage, listening, writing or speaking success.",
+          "horizontalOverflow": false
+        }
+      ],
+      "pageErrors": [],
+      "result": "captured",
+      "browserVersion": "154.0.8037.57",
+      "facts": {
+        "userAuthoredEntries": 1,
+        "savedMeanings": 1,
+        "legacyEvidence": 0,
+        "evaluatedAttempts": 1,
+        "taskSkills": ["recall"],
+        "taskSourceKinds": ["user"],
+        "scheduleEvents": 1
+      }
+    },
+    {
+      "name": "iphone-webkit",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "reducedMotion": "reduce",
+      "captures": [
+        {
+          "filename": "iphone-webkit-own-meaning-draft.png",
+          "detail": "Actual definition input at the current editor focus; no study intention or knowledge event exists.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-own-meaning-created.png",
+          "detail": "Metadata created by a real form submission; no review or evidence is created by authoring.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-dictionary-own-meaning.png",
+          "detail": "The exact private user-authored sense appears with explicit unverified provenance; no editorial authority or audio is implied.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-recall-own-answer-key.png",
+          "detail": "One actual independent recall response, matched against the user's own key. This does not verify the definition or another skill.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-library-saved-own-meaning.png",
+          "detail": "The saved sense remains searchable with its user provenance after a real recall/rating; source and evidence have separate identities.",
+          "horizontalOverflow": false
+        },
+        {
+          "filename": "iphone-webkit-observatory-own-recall.png",
+          "detail": "A single real recall observation feeds the common Observatory; no fabricated proficiency percentage, listening, writing or speaking success.",
+          "horizontalOverflow": false
+        }
+      ],
+      "pageErrors": [],
+      "result": "captured",
+      "browserVersion": "27.2",
+      "facts": {
+        "userAuthoredEntries": 1,
+        "savedMeanings": 1,
+        "legacyEvidence": 0,
+        "evaluatedAttempts": 1,
+        "taskSkills": ["recall"],
+        "taskSourceKinds": ["user"],
+        "scheduleEvents": 1
+      }
+    }
+  ]
+}

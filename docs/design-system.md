@@ -1,5 +1,11 @@
 # Дизайн-система LEXIS
 
+## Собственные определения — 25 октября
+
+`/library/meanings` и contextual Inbox используют существующие semantic tokens, спокойные reading surfaces, native controls и focus styles. Обязательны слово/POS и определение; перевод/пример/IPA/forms раскрываются отдельно. Источник отличает собственную заметку от editorial content. Палитра, material levels и основная навигация не менялись.
+
+[12 реальных кадров](screenshots/2026-10-25-user-meanings/capture-manifest.json) из production source `754323b`: шесть состояний в Chromium desktop и WebKit iPhone13 preset, оба result `captured`, zero pageerror/overflow. Неуспешный manifest сохранён отдельно; prefetch pageerror устранён у контекстных practice links. Это не hardware Safari, SR/200% zoom, измеренный contrast, тепловой бюджет или финальное визуальное одобрение.
+
 ## Источник и статус
 
 Направление задают [актуальные решения](DECISIONS_AND_SOURCE_OF_TRUTH.md), [VISUAL_DESIGN](source/VISUAL_DESIGN.md) и [SCREEN_BLUEPRINTS](source/SCREEN_BLUEPRINTS.md). 22 октября 2026 года просмотрены все пять изображений LIGHT-пакета и `reference_overview.jpg`; [инвентаризация](HANDOFF_AUDIT_2026-10-22.md) содержит имена и происхождение.

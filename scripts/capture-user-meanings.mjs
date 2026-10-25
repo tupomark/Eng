@@ -292,7 +292,7 @@ for (const configuration of configurations) {
       : entry.captures.some((capture) => capture.horizontalOverflow)
         ? "captured-with-overflow"
         : "captured";
-    failed ||= entry.pageErrors.length > 0;
+    failed ||= entry.result !== "captured";
     await context.close();
   } catch (error) {
     failed = true;

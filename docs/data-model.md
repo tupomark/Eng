@@ -6,7 +6,7 @@
 
 | Группа                | Реализованное представление                                                                            | Правило                                                                                                      |
 | --------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Lexeme / Sense        | Авторский `seed`, стабильные sense IDs, формы/POS, версии/provenance                                   | Разные POS/значения не сливаются по строке; unavailable sense остаётся в Library/history                     |
+| Lexeme / Sense        | Редакционный `seed` и user-authored каталог, стабильные lexeme/sense IDs, формы/POS, версии/provenance | Разные POS/значения не сливаются по строке; unavailable sense остаётся в Library/history                     |
 | Учебное намерение     | Legacy saved sense, materials Inbox rows/intent                                                        | Сохранение не создаёт знания; unresolved candidate не вынуждается ссылаться на первый sense                  |
 | Источник              | Material document/version/chapter/paragraph/character anchor, bookmarks, bounded context visits        | Appearance/position и evidence — разные записи; временный excerpt ledger не полная долговременная provenance |
 | Task                  | Versioned typed target, skill/format/prompt family, rubric, answers/hints, source/evaluator capability | Lexical target и GrammarConcept различны; проверяется допустимая modality                                    |
@@ -22,20 +22,29 @@
 
 ## Browser storage и backup/restore
 
-| Store                                  | Содержимое и версия                                                          | Граница                                                                                               |
-| -------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `lexis.learning.v1`                    | Старые saved senses/contexts, self-review evidence/disputes, sample position | Сохраняется без автоматической перезаписи; restore preview/merge проверяет совпадающие ID и конфликты |
-| `lexis.tasks.v1`                       | Definitions, attempts, challenges, review items/events                       | JSON runtime validation, best-effort stale snapshot guard; не cloud transaction                       |
-| `lexis.materials.v1`                   | Books/chapters/anchors/bookmarks/import batches/rows                         | Local owner, ограниченные размеры; additive restore не затирает текущую позицию                       |
-| `lexis.reader.preferences.v1`          | Font/size/spacing                                                            | Не evidence и не влияние на schedule                                                                  |
-| `lexis.goals.v1`                       | Goals/cadence/revisions/archive                                              | Неизменяемое происхождение counts; stale proposals не применяются                                     |
-| `lexis.writing.v1` (IndexedDB)         | Drafts/revisions/conflicts                                                   | Readwrite transactions/revision checks; собственный export/restore                                    |
-| `lexis.media.local.v1` (IndexedDB)     | Imported media blobs/transcripts/playback sessions                           | Private object URLs, не public storage; complete media backup/restore ещё не завершён                 |
-| Preferences/Tutor/context/offline keys | Отдельные typed settings, conversations и bounded session-local excerpts     | Согласия/сроки/удаление отдельно от evidence; соответствующие новые срезы требуют integrated gate     |
+| Store                                  | Содержимое и версия                                                            | Граница                                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `lexis.learning.v1`                    | Старые saved senses/contexts, self-review evidence/disputes, sample position   | Сохраняется без автоматической перезаписи; restore preview/merge проверяет совпадающие ID и конфликты          |
+| `lexis.lexical-catalog.v1`             | User-authored lexemes/POS, stable senses, explicit forms, provenance, revision | Не intents/evidence; immutable originals, append-only meanings, validated additive restore и ID-conflict block |
+| `lexis.tasks.v1`                       | Definitions, attempts, challenges, review items/events                         | JSON runtime validation, best-effort stale snapshot guard; не cloud transaction                                |
+| `lexis.materials.v1`                   | Books/chapters/anchors/bookmarks/import batches/rows                           | Local owner, ограниченные размеры; additive restore не затирает текущую позицию                                |
+| `lexis.reader.preferences.v1`          | Font/size/spacing                                                              | Не evidence и не влияние на schedule                                                                           |
+| `lexis.goals.v1`                       | Goals/cadence/revisions/archive                                                | Неизменяемое происхождение counts; stale proposals не применяются                                              |
+| `lexis.writing.v1` (IndexedDB)         | Drafts/revisions/conflicts                                                     | Readwrite transactions/revision checks; собственный export/restore                                             |
+| `lexis.media.local.v1` (IndexedDB)     | Imported media blobs/transcripts/playback sessions                             | Private object URLs, не public storage; complete media backup/restore ещё не завершён                          |
+| Preferences/Tutor/context/offline keys | Отдельные typed settings, conversations и bounded session-local excerpts       | Согласия/сроки/удаление отдельно от evidence; соответствующие новые срезы требуют integrated gate              |
 
 JSON проходят runtime validation; TypeScript не валидирует persisted bytes. Повреждение/неизвестная версия блокирует writes и сохраняет исходник для raw export. Read failure не лечится hidden reset. Quota/write failure не публикует success. localStorage CAS best effort не защищает от всех строго одновременных writes. IndexedDB атомарность ограничена конкретной local DB и не заменяет multi-device sync.
 
 V1 restore проверяет file size/schema, сохраняет IDs, unavailable senses и disputes, показывает preview, требует backup/confirmation и выполняет additive merge. Conflicting IDs/context останавливают перенос. Повтор идентичного импорта идемпотентен, старый backup не активирует исключённое событие. Другие stores экспортируются отдельно. Обещание единого полного profile restore до сверки всех stores/media не даётся.
+
+## Собственные лексемы и значения
+
+`UserLexicalCatalog.version=1` содержит `revision` и `UserLexicalEntry[]`. Entry хранит `Lexeme`, `Sense[]`, явные `forms`, `createdAt` и фиксированный private user-authored provenance. Внутренние IDs имеют namespaces `user-lexeme-*` и `user-sense-*`; пользовательский restore не может подставить редакционный/provider ID. POS и значения одного написания не объединяются автоматически. Append к выбранному entry добавляет только новый sense; исходные определения, task versions и evidence не переписываются.
+
+Создание проверяет точное содержание и сохраняет уже существующую идентичность при повторе; semantic equivalence не угадывается. Restore сохраняет входящие stable IDs, включая исторически разные одинаково выглядящие записи. Совпавший ID с иным содержанием останавливает весь merge. Экспорт каталога не содержит books, saved contexts или evidence: соответствующие stores восстанавливаются отдельно. Границы и текущие regression checks — в [user meanings](feature-notes/user-meanings.md).
+
+Пользовательский ключ ответа имеет `TaskProvenance.kind=user`. Recognition/recall проверяют именно этот ключ; результат не становится независимой верификацией определения или другого навыка. Сохранённое намерение по-прежнему ссылается на общий sense ID в learning-v1, а наблюдения и FSRS events — на target/skill в task store. Создание каталога не требует автоматической миграции или перезаписи прежних learning-v1 bytes.
 
 ## FSRS, assistance и replay
 
