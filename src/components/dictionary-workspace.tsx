@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, BookOpen, Search } from "lucide-react";
 import type { DictionaryLookupResult } from "@/application/dictionary-lookup";
-import { EditorialDictionaryLookup } from "@/infrastructure/dictionary/editorial-lookup";
-import { findEntry } from "@/infrastructure/dictionary/seed";
 import {
   buildDictionaryHref,
   loadDictionaryVisit,
@@ -20,46 +18,59 @@ import {
 import { Shell } from "./shell";
 import styles from "./dictionary-workspace.module.css";
 import { SenseContextBackup } from "./sense-contexts";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 
-const dictionary = new EditorialDictionaryLookup();
 export function DictionaryWorkspace({
   initialQuery = "",
   initialSenseId = "",
+  initialLexemeId = "",
   initialLevel = "full",
   visitToken = "",
   returnHref = "/library",
 }: {
   initialQuery?: string;
   initialSenseId?: string;
+  initialLexemeId?: string;
   initialLevel?: "full" | "deep";
   visitToken?: string;
   returnHref?: string;
 }) {
   const router = useRouter();
+  const catalog = useLexicalCatalog();
+  const dictionary = catalog.lookup;
   const [query, setQuery] = useState(initialQuery);
   const [selectedSenseId, setSelectedSenseId] = useState(initialSenseId);
+  const [selectedLexemeId, setSelectedLexemeId] = useState(initialLexemeId);
   const [level, setLevel] = useState(initialLevel);
   const [context, setContext] = useState<DictionaryVisitContext | null>(null);
   const [contextError, setContextError] = useState("");
   const [response, setResponse] = useState<{
     query: string;
+    lookup: typeof dictionary;
     result: DictionaryLookupResult;
   } | null>(null);
   const [retry, setRetry] = useState(0);
-  const result = response?.query === query ? response.result : null;
-  const entry =
-    result?.status === "found" && result.matches.length === 1
-      ? result.matches[0].entry
+  const [resultLimit, setResultLimit] = useState(30);
+  const result =
+    response?.query === query && response.lookup === dictionary
+      ? response.result
       : null;
   const match =
-    result?.status === "found" && result.matches.length === 1
-      ? result.matches[0]
+    result?.status === "found"
+      ? (result.matches.find((candidate) =>
+          candidate.entry.senses.some((sense) => sense.id === selectedSenseId),
+        ) ??
+        result.matches.find(
+          (candidate) => candidate.entry.lexeme.id === selectedLexemeId,
+        ) ??
+        (result.matches.length === 1 ? result.matches[0] : null))
       : null;
+  const entry = match?.entry ?? null;
   let backHref = safeDictionaryReturnHref(context?.returnHref ?? returnHref);
   if (
     context &&
     entry &&
-    findEntry(context.surface)?.lexeme.id === entry.lexeme.id &&
+    catalog.findEntry(context.surface)?.lexeme.id === entry.lexeme.id &&
     entry.senses.some((sense) => sense.id === selectedSenseId)
   ) {
     const returnUrl = new URL(backHref, "https://lexis.invalid");
@@ -98,27 +109,31 @@ export function DictionaryWorkspace({
     void dictionary
       .lookup({ query, context: context?.excerpt, signal: controller.signal })
       .then((next) => {
-        if (!controller.signal.aborted) setResponse({ query, result: next });
+        if (!controller.signal.aborted)
+          setResponse({ query, lookup: dictionary, result: next });
       })
       .catch(() => {
         if (!controller.signal.aborted)
           setResponse({
             query,
+            lookup: dictionary,
             result: { status: "unavailable", reason: "provider-error" },
           });
       });
     return () => controller.abort();
-  }, [query, context?.excerpt, retry]);
+  }, [query, context?.excerpt, retry, dictionary]);
 
   function updateLocation(
     nextSense = selectedSenseId,
     nextLevel = level,
     nextQuery = query,
+    nextLexemeId = selectedLexemeId,
   ) {
     router.replace(
       buildDictionaryHref({
         query: nextQuery,
         senseId: nextSense || undefined,
+        lexemeId: nextLexemeId || undefined,
         level: nextLevel,
         contextToken: visitToken || undefined,
         returnHref: backHref,
@@ -162,6 +177,8 @@ export function DictionaryWorkspace({
               onChange={(event) => {
                 setQuery(event.target.value);
                 setSelectedSenseId("");
+                setSelectedLexemeId("");
+                setResultLimit(30);
               }}
             />
             <button className="button secondary" type="submit">
@@ -193,7 +210,7 @@ export function DictionaryWorkspace({
           </aside>
         )}
         {!result ? (
-          <p role="status">Looking in the editorial sample…</p>
+          <p role="status">Looking in your local dictionary…</p>
         ) : result.status === "found" && entry && match ? (
           <article className={styles.entry}>
             <header>
@@ -203,11 +220,14 @@ export function DictionaryWorkspace({
                   ? "UNVERIFIED AI SUGGESTION"
                   : entry.provenance.kind === "licensed"
                     ? "LICENSED SOURCE"
-                    : "EDITORIAL SAMPLE"}
+                    : entry.provenance.kind === "user-authored"
+                      ? "YOUR DEFINITION · UNVERIFIED"
+                      : "EDITORIAL SAMPLE"}
               </p>
               <h2 className={styles.headword}>{entry.lexeme.lemma}</h2>
               <p className={styles.ipa}>
-                {entry.lexeme.ipa} · {entry.lexeme.partOfSpeech}
+                {entry.lexeme.ipa ? `${entry.lexeme.ipa} · ` : ""}
+                {entry.lexeme.partOfSpeech}
               </p>
               {match.matchedBy === "form" && (
                 <p className={styles.note}>
@@ -217,7 +237,7 @@ export function DictionaryWorkspace({
               )}
               {match.forms.length > 0 && (
                 <p className={styles.note}>
-                  Editorial forms: {match.forms.join(", ")}
+                  Source-supplied forms: {match.forms.join(", ")}
                 </p>
               )}
             </header>
@@ -257,42 +277,81 @@ export function DictionaryWorkspace({
             className={styles.results}
             aria-label="Dictionary search results"
           >
-            <h2>{query.trim() ? "Matching entries" : "Explore the sample"}</h2>
-            {result.matches.map(({ entry: candidate }) => (
-              <button
-                className={styles.result}
-                key={candidate.lexeme.id}
-                onClick={() => {
-                  setQuery(candidate.lexeme.lemma);
-                  setSelectedSenseId("");
-                  updateLocation("", level, candidate.lexeme.lemma);
-                }}
-              >
-                <BookOpen size={19} />
-                <span>
-                  <strong>{candidate.lexeme.lemma}</strong>
+            <h2>
+              {query.trim() ? "Matching entries" : "Explore local entries"}
+            </h2>
+            <p className={styles.note}>
+              {result.matches.length} entries. Choose a source and part of
+              speech, then a specific meaning.
+            </p>
+            {result.matches
+              .slice(0, resultLimit)
+              .map(({ entry: candidate }) => (
+                <button
+                  className={styles.result}
+                  key={candidate.lexeme.id}
+                  onClick={() => {
+                    setQuery(candidate.lexeme.lemma);
+                    setSelectedSenseId("");
+                    setSelectedLexemeId(candidate.lexeme.id);
+                    updateLocation(
+                      "",
+                      level,
+                      candidate.lexeme.lemma,
+                      candidate.lexeme.id,
+                    );
+                  }}
+                >
+                  <BookOpen size={19} />
                   <span>
-                    {candidate.lexeme.partOfSpeech} · {candidate.senses.length}{" "}
-                    {candidate.senses.length === 1 ? "meaning" : "meanings"}
+                    <strong>{candidate.lexeme.lemma}</strong>
+                    <span>
+                      {candidate.lexeme.partOfSpeech} ·{" "}
+                      {candidate.provenance.kind === "user-authored"
+                        ? "Your definition"
+                        : "Editorial sample"}{" "}
+                      · {candidate.senses.length}{" "}
+                      {candidate.senses.length === 1 ? "meaning" : "meanings"}
+                    </span>
+                    <span>
+                      {candidate.senses
+                        .map((sense) => sense.definition)
+                        .join("; ")
+                        .slice(0, 240)}
+                    </span>
                   </span>
-                </span>
+                </button>
+              ))}
+            {result.matches.length > resultLimit && (
+              <button
+                className="button secondary"
+                onClick={() => setResultLimit((limit) => limit + 30)}
+              >
+                Show more entries
               </button>
-            ))}
+            )}
           </section>
         ) : result.status === "not-found" ? (
           <section className="empty-state glass-panel">
             <BookOpen size={26} />
-            <h2>Outside this sample.</h2>
+            <h2>No local entry yet.</h2>
             <p>
-              No entry for “{query}” was found in the eight-word editorial
-              sample. Your passage and existing learning history are preserved.
+              No entry for “{query}” was found in your definitions or the
+              eight-word editorial sample. Your passage and existing learning
+              history are preserved.
             </p>
             <p className={styles.note}>
               Try a different form or a supported headword, such as linger or
               trace. A full live dictionary requires a configured, licensed
               source.
             </p>
-            <Link href={backHref} className="button secondary">
+            <Link
+              href={`/library/meanings?q=${encodeURIComponent(query)}`}
+              className="button secondary"
+            >
+              Write your own definition
+            </Link>
+            <Link href={backHref} className="button ghost">
               Return to your source
             </Link>
           </section>
@@ -311,11 +370,25 @@ export function DictionaryWorkspace({
             </button>
           </section>
         )}
+        {catalog.error && (
+          <p className="status-banner error" role="alert">
+            {catalog.error} Your stored bytes are preserved.{" "}
+            <Link href="/library/meanings">Open definition recovery</Link>
+          </p>
+        )}
+        <Link className="text-link" href="/library/meanings">
+          Manage your definitions
+        </Link>
         <details className={styles.coverage}>
-          <summary>Eight authored entries are available offline.</summary>
+          <summary>
+            Eight editorial entries and your own definitions are available
+            locally.
+          </summary>
           <p className={styles.note}>
-            Live dictionary coverage and licensed audio are awaiting
-            configuration; an absent result does not mean the word is invalid.
+            Your definitions are private and user-authored, not verified
+            dictionary facts. Live dictionary coverage and licensed audio are
+            awaiting configuration; an absent result does not mean the word is
+            invalid.
           </p>
         </details>
         <SenseContextBackup />

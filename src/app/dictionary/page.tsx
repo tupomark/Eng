@@ -14,6 +14,7 @@ export default async function DictionaryPage({
     <DictionaryWorkspace
       initialQuery={text("q", 160)}
       initialSenseId={text("sense", 200)}
+      initialLexemeId={text("entry", 200)}
       initialLevel={text("level", 10) === "deep" ? "deep" : "full"}
       visitToken={text("visit", 100)}
       returnHref={text("return", 1_000) || "/library"}

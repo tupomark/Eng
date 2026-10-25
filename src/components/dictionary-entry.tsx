@@ -34,7 +34,9 @@ export function DictionaryProvenance({
           ? "Unverified AI suggestion"
           : source.kind === "licensed"
             ? "Licensed source"
-            : "Authored editorial sample"}
+            : source.kind === "user-authored"
+              ? "Your definition · not independently verified"
+              : "Authored editorial sample"}
       </summary>
       <p>
         {source.provider} · {source.version}
@@ -145,12 +147,26 @@ export function DictionarySelectedMeaning({
     <section className={styles.detail} aria-label="Selected meaning details">
       <h2>{level === "deep" ? "Deep Dive" : "A closer look"}</h2>
       <p>{sense.definition}</p>
-      <section className={styles.block} aria-label="Editorial example">
+      <section
+        className={styles.block}
+        aria-label={
+          entry.provenance.kind === "user-authored"
+            ? "Your example"
+            : "Editorial example"
+        }
+      >
         <h3>Example</h3>
-        <p lang="en">{sense.example}</p>
+        <p lang="en">
+          {sense.example || "No example has been supplied for this meaning."}
+        </p>
       </section>
       <section className={styles.block} aria-label="Collocations">
         <h3>Common combinations</h3>
+        {!sense.collocations.length && (
+          <p className={styles.note}>
+            No combinations have been supplied by this source.
+          </p>
+        )}
         <ul>
           {sense.collocations.map((item) => (
             <li key={item}>{item}</li>
@@ -212,12 +228,20 @@ export function DictionarySelectedMeaning({
       )}
       <section className={styles.block} aria-label="Pronunciation source">
         <h3>Pronunciation</h3>
-        <p>{entry.lexeme.ipa}</p>
+        <p>{entry.lexeme.ipa || "No IPA has been supplied by this source."}</p>
         <p className={styles.note}>
           IPA is supplied by the displayed source. Verified BrE/AmE recordings
           and a pronunciation scorer are not connected. No audio is played.
         </p>
       </section>
+      {entry.provenance.kind === "user-authored" && (
+        <p className={styles.note}>
+          This meaning was written by you. Practice can check recall of your
+          definition; it does not independently verify its linguistic accuracy.
+          Editorial Deep Dive and verified audio are not available for this
+          entry.
+        </p>
+      )}
       <div className={styles.actions}>
         {passages.error && (
           <p className="status-banner error" role="alert">

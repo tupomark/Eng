@@ -16,18 +16,13 @@ import {
 } from "@/domain/knowledge/observatory";
 import { targetKey } from "@/domain/tasks/engine";
 import type { LearningTarget, TaskSkill } from "@/domain/tasks/types";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 import styles from "./knowledge-workspaces.module.css";
 import { knowledgeSkillLabels } from "./knowledge-labels";
-const senseLabels = new Map(
-  seedEntries.flatMap((entry) =>
-    entry.senses.map(
-      (sense) =>
-        [sense.id, `${entry.lexeme.lemma} — ${sense.translation}`] as const,
-    ),
-  ),
-);
-function targetLabel(target: LearningTarget) {
+function formatTargetLabel(
+  target: LearningTarget,
+  senseLabels: ReadonlyMap<string, string>,
+) {
   return target.kind === "sense"
     ? (senseLabels.get(target.senseId) ??
         "Saved meaning · dictionary entry unavailable")
@@ -46,6 +41,24 @@ export function KnowledgeObservatory({
 }) {
   const learning = useLearning();
   const tasks = useTaskLearning();
+  const catalog = useLexicalCatalog();
+  const senseLabels = useMemo(
+    () =>
+      new Map(
+        catalog.entries.flatMap((entry) =>
+          entry.senses.map(
+            (sense) =>
+              [
+                sense.id,
+                `${entry.lexeme.lemma} — ${sense.translation || sense.definition}`,
+              ] as const,
+          ),
+        ),
+      ),
+    [catalog.entries],
+  );
+  const targetLabel = (target: LearningTarget) =>
+    formatTargetLabel(target, senseLabels);
   const [skill, setSkill] = useState(
     OBSERVATORY_SKILLS.includes(initialSkill as TaskSkill)
       ? initialSkill
@@ -121,20 +134,20 @@ export function KnowledgeObservatory({
     () =>
       new Set(
         learning.state.saved.flatMap((saved) =>
-          seedEntries
+          catalog.entries
             .filter((entry) =>
               entry.senses.some((sense) => sense.id === saved.senseId),
             )
             .map((entry) => entry.lexeme.id),
         ),
       ),
-    [learning.state.saved],
+    [learning.state.saved, catalog.entries],
   );
   const unavailableCount = useMemo(
     () =>
       learning.state.saved.filter((saved) => !senseLabels.has(saved.senseId))
         .length,
-    [learning.state.saved],
+    [learning.state.saved, senseLabels],
   );
   return (
     <Shell title="Knowledge Observatory">
@@ -162,8 +175,13 @@ export function KnowledgeObservatory({
             </Link>
           </div>
         </header>
-        {(!learning.ready || !tasks.ready) && (
+        {(!learning.ready || !tasks.ready || !catalog.ready) && (
           <p role="status">Opening your local learning history…</p>
+        )}
+        {catalog.error && (
+          <p role="alert" className={styles.notice}>
+            {catalog.error}
+          </p>
         )}
         {tasks.error && (
           <div className={styles.notice} role="alert">

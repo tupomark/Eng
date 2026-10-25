@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Shell } from "@/components/shell";
 import { useLearning } from "@/components/learning-provider";
 import { useMaterials } from "@/components/materials/use-materials";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+import { useLexicalCatalog } from "@/components/lexical-catalog-provider";
+import { LexicalCatalogEditor } from "@/components/lexical-catalog-editor";
+import { buildDictionaryHref } from "@/infrastructure/dictionary/context-navigation";
 import { normalizeImportTerm } from "@/domain/imports/lexical-import";
 import type { ImportDisposition, ImportRow } from "@/domain/imports/types";
 import styles from "@/components/materials/materials.module.css";
@@ -13,6 +15,7 @@ const PAGE_SIZE = 30;
 export function SmartInbox() {
   const materials = useMaterials();
   const learning = useLearning();
+  const catalog = useLexicalCatalog();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | ImportDisposition>("pending");
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -88,6 +91,9 @@ export function SmartInbox() {
             <Link className="button ghost" href="/library">
               Back to Library
             </Link>
+            <Link className="button ghost" href="/library/meanings">
+              Own dictionary
+            </Link>
           </div>
           <label className={styles.label}>
             Search imported vocabulary
@@ -134,9 +140,9 @@ export function SmartInbox() {
               active batches.
             </p>
           )}
-          {(materials.error || learning.error || error) && (
+          {(materials.error || learning.error || catalog.error || error) && (
             <p className="status-banner error" role="alert">
-              {error || materials.error || learning.error}
+              {error || materials.error || learning.error || catalog.error}
             </p>
           )}
           {visible.length > 0 && (
@@ -186,12 +192,25 @@ export function SmartInbox() {
           )}
           <ul className={styles.list}>
             {visible.map((row) => {
-              const entry = seedEntries.find(
+              const entries = catalog.entries.filter(
                 (candidate) =>
                   normalizeImportTerm(candidate.lexeme.lemma) ===
-                  normalizeImportTerm(row.term),
+                    normalizeImportTerm(row.term) ||
+                  catalog.userEntries.some(
+                    (item) =>
+                      item.lexeme.id === candidate.lexeme.id &&
+                      item.forms.some(
+                        (form) =>
+                          normalizeImportTerm(form) ===
+                          normalizeImportTerm(row.term),
+                      ),
+                  ) ||
+                  candidate.senses.some((sense) => sense.id === row.senseId),
               );
-              const choice = senseChoices[row.id] ?? "";
+              const meanings = entries.flatMap((entry) =>
+                entry.senses.map((sense) => ({ entry, sense })),
+              );
+              const choice = senseChoices[row.id] ?? row.senseId ?? "";
               const saved =
                 row.senseId !== null &&
                 learning.state.saved.some(
@@ -338,14 +357,28 @@ export function SmartInbox() {
                   {row.disposition === "accepted" && (
                     <div className={styles.stack}>
                       {saved ? (
-                        <p role="status">
-                          Selected meaning is saved for study. Your separate
-                          practice history is preserved.
-                        </p>
-                      ) : entry ? (
+                        <>
+                          <p role="status">
+                            Selected meaning is saved for study. Your separate
+                            practice history is preserved.
+                          </p>
+                          {row.senseId && (
+                            <Link
+                              className="text-link"
+                              href={buildDictionaryHref({
+                                query: row.term,
+                                senseId: row.senseId,
+                                returnHref: "/library/inbox",
+                              })}
+                            >
+                              Open selected meaning in Dictionary
+                            </Link>
+                          )}
+                        </>
+                      ) : meanings.length ? (
                         <>
                           <label className={styles.label}>
-                            Choose an editorial meaning before studying
+                            Choose a precise meaning before studying
                             <select
                               className={styles.select}
                               aria-label={`Meaning for ${row.term}, row ${row.rowNumber}`}
@@ -358,20 +391,29 @@ export function SmartInbox() {
                               }
                             >
                               <option value="">Keep unresolved</option>
-                              {entry.senses.map((sense) => (
+                              {meanings.map(({ entry, sense }) => (
                                 <option value={sense.id} key={sense.id}>
-                                  {sense.definition} — {sense.translation}
+                                  {entry.lexeme.partOfSpeech} ·{" "}
+                                  {sense.definition} — {sense.translation} ·{" "}
+                                  {entry.provenance.kind === "user-authored"
+                                    ? "Your definition"
+                                    : "Editorial sample"}
                                 </option>
                               ))}
                             </select>
                           </label>
                           <button
                             className="button secondary"
-                            disabled={!choice || !learning.ready}
+                            disabled={
+                              !choice ||
+                              !learning.ready ||
+                              !catalog.ready ||
+                              !!catalog.error
+                            }
                             onClick={() => {
                               if (
-                                !entry.senses.some(
-                                  (sense) => sense.id === choice,
+                                !meanings.some(
+                                  ({ sense }) => sense.id === choice,
                                 )
                               )
                                 return;
@@ -405,11 +447,41 @@ export function SmartInbox() {
                         </>
                       ) : (
                         <p className={styles.small}>
-                          Meaning unresolved. This word is outside the
-                          eight-entry editorial sample. Your context is kept; a
-                          configured dictionary source is needed for wider
-                          coverage.
+                          Meaning unresolved. Your context is kept. Describe a
+                          precise meaning below, keep it for later or use a
+                          configured dictionary source when one is available.
                         </p>
+                      )}
+                      {!saved && (
+                        <details>
+                          <summary>Describe another meaning yourself</summary>
+                          <LexicalCatalogEditor
+                            initial={{
+                              lemma: row.term.slice(0, 160),
+                              translation: row.translation.slice(0, 1_000),
+                              example: row.context.slice(0, 2_000),
+                            }}
+                            onCreated={({ senseId }) => {
+                              setSenseChoices((values) => ({
+                                ...values,
+                                [row.id]: senseId,
+                              }));
+                              if (
+                                updateRows([row.id], (value) => ({
+                                  ...value,
+                                  senseId,
+                                }))
+                              )
+                                setNotice(
+                                  "Your definition is linked to this import row. Choose Add chosen meaning to study when ready; no review or evidence was created.",
+                                );
+                              else
+                                setNotice(
+                                  "Your definition was created, but its import link could not be saved. It remains available in Own dictionary; retry selecting it here without creating another definition.",
+                                );
+                            }}
+                          />
+                        </details>
                       )}
                     </div>
                   )}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Shell } from "./shell";
 import { useLearning } from "./learning-provider";
 import {
@@ -12,16 +12,9 @@ import {
   type RelationType,
 } from "@/domain/knowledge/network";
 import { EDITORIAL_RELATIONS } from "@/infrastructure/dictionary/editorial-relations";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 import { buildDictionaryHref } from "@/infrastructure/dictionary/context-navigation";
 import styles from "./knowledge-workspaces.module.css";
-
-const meanings = seedEntries.flatMap((entry) =>
-  entry.senses.map((sense) => ({ sense, lexeme: entry.lexeme })),
-);
-const meaningById = new Map(
-  meanings.map((meaning) => [meaning.sense.id, meaning]),
-);
 
 export function SemanticNetwork({
   initialSense = "linger-stay",
@@ -35,6 +28,22 @@ export function SemanticNetwork({
   initialSaved?: boolean;
 }) {
   const learning = useLearning();
+  const catalog = useLexicalCatalog();
+  const meanings = useMemo(
+    () =>
+      catalog.entries.flatMap((entry) =>
+        entry.senses.map((sense) => ({
+          sense,
+          lexeme: entry.lexeme,
+          provenance: entry.provenance,
+        })),
+      ),
+    [catalog.entries],
+  );
+  const meaningById = useMemo(
+    () => new Map(meanings.map((meaning) => [meaning.sense.id, meaning])),
+    [meanings],
+  );
   const router = useRouter();
   const selected = meaningById.get(initialSense) ?? meanings[0];
   const [type, setType] = useState(
@@ -48,6 +57,12 @@ export function SemanticNetwork({
       : "all",
   );
   const [savedOnly, setSavedOnly] = useState(initialSaved);
+  if (!catalog.ready)
+    return (
+      <Shell title="Semantic Network">
+        <p role="status">Opening your local meanings…</p>
+      </Shell>
+    );
   if (initialSense && !meaningById.has(initialSense))
     return (
       <Shell title="Semantic Network">
@@ -56,9 +71,9 @@ export function SemanticNetwork({
             <p className="eyebrow">SEMANTIC NETWORK</p>
             <h1>Meaning unavailable.</h1>
             <p>
-              The requested meaning is outside this editorial sample. Its saved
-              context and history have not been changed or attached to another
-              meaning.
+              The requested meaning is unavailable in this local dictionary. Its
+              saved context and history have not been changed or attached to
+              another meaning.
             </p>
             <div className={styles.links}>
               <Link className="button secondary" href="/library">
@@ -118,7 +133,7 @@ export function SemanticNetwork({
         >
           <h2>Start with one meaning</h2>
           <label className={styles.field}>
-            Editorial meaning
+            Editorial or own meaning
             <select
               value={selected.sense.id}
               onChange={(event) => {
@@ -127,7 +142,7 @@ export function SemanticNetwork({
             >
               {meanings.map(({ lexeme, sense }) => (
                 <option key={sense.id} value={sense.id}>
-                  {lexeme.lemma} — {sense.translation}
+                  {lexeme.lemma} — {sense.translation || sense.definition}
                 </option>
               ))}
             </select>
@@ -138,6 +153,12 @@ export function SemanticNetwork({
           </h3>
           <p>{selected.sense.definition}</p>
           <p className={styles.note}>{selected.sense.translation}</p>
+          {selected.provenance.kind === "user-authored" && (
+            <p className={styles.note}>
+              Your own note · not independently verified. Connections are shown
+              only when an explicit warranted link exists.
+            </p>
+          )}
           {selectedSaved ? (
             <>
               <span className={styles.badge}>In your Library</span>
@@ -149,7 +170,7 @@ export function SemanticNetwork({
             </>
           ) : (
             <p className={styles.note}>
-              This meaning is editorial information; it is not automatically
+              This meaning is dictionary information; it is not automatically
               part of your learning history.
             </p>
           )}
@@ -158,6 +179,7 @@ export function SemanticNetwork({
               className="text-link"
               href={buildDictionaryHref({
                 query: selected.lexeme.lemma,
+                lexemeId: selected.lexeme.id,
                 senseId: selected.sense.id,
                 level: "full",
                 returnHref,
@@ -251,6 +273,7 @@ export function SemanticNetwork({
                         className="text-link"
                         href={buildDictionaryHref({
                           query: other.lexeme.lemma,
+                          lexemeId: other.lexeme.id,
                           senseId: otherId,
                           returnHref,
                         })}

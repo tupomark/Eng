@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowUpRight, Download, Info, RotateCcw, Check } from "lucide-react";
 import { SKILLS, SCHEDULER_VERSION } from "@/domain";
 import { useReviewOverview } from "./use-review-overview";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 import { STORAGE_KEY } from "@/infrastructure/storage/browser-repository";
 import { Shell } from "./shell";
 import { Orb } from "./orb";
@@ -20,6 +20,7 @@ const labels = {
 };
 export function Core() {
   const { state, dispute, reset, ready, progress } = useLearning();
+  const catalog = useLexicalCatalog();
   const { total: due, fsrsDue } = useReviewOverview();
   const [resetOpen, setResetOpen] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -145,12 +146,9 @@ export function Core() {
         {state.evidence.length ? (
           <div className="evidence-list glass-panel">
             {[...state.evidence].reverse().map((item) => {
-              const entry = seedEntries.find((entry) =>
-                entry.senses.some((sense) => sense.id === item.senseId),
-              );
-              const sense = entry?.senses.find(
-                (sense) => sense.id === item.senseId,
-              );
+              const meaning = catalog.findSense(item.senseId);
+              const entry = meaning?.entry;
+              const sense = meaning?.sense;
               return (
                 <div className="evidence-row" key={item.id}>
                   <div>

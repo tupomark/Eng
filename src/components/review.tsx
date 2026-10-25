@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, Eye, Layers3, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type Rating } from "@/domain";
 import { useReviewOverview } from "./use-review-overview";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 import { useLearning } from "./learning-provider";
 import { Shell } from "./shell";
 
@@ -15,12 +15,19 @@ const ratings: { value: Rating; title: string; description: string }[] = [
   { value: "good", title: "Good", description: "I recognised the meaning" },
   { value: "easy", title: "Easy", description: "It felt familiar" },
 ];
-const availableSenseIds = new Set(
-  seedEntries.flatMap((entry) => entry.senses.map((sense) => sense.id)),
-);
-
 export function Review() {
-  const { state, ready, review, now, progress } = useLearning();
+  const { state, ready: learningReady, review, now, progress } = useLearning();
+  const catalog = useLexicalCatalog();
+  const ready = learningReady && catalog.ready;
+  const availableSenseIds = useMemo(
+    () =>
+      new Set(
+        catalog.entries.flatMap((entry) =>
+          entry.senses.map((sense) => sense.id),
+        ),
+      ),
+    [catalog.entries],
+  );
   const { legacyDue: allDue, fsrsDue, migrated } = useReviewOverview();
   const [revealedSense, setRevealedSense] = useState<string | null>(null);
   const [reviewed, setReviewed] = useState(0);
@@ -35,12 +42,9 @@ export function Review() {
   useEffect(() => {
     ratingInFlight.current = false;
   }, [current?.senseId]);
-  const entry =
-    current &&
-    seedEntries.find((item) =>
-      item.senses.some((sense) => sense.id === current.senseId),
-    );
-  const sense = entry?.senses.find((item) => item.id === current?.senseId);
+  const meaning = current ? catalog.findSense(current.senseId) : null;
+  const entry = meaning?.entry;
+  const sense = meaning?.sense;
   const revealed = Boolean(sense && revealedSense === sense.id);
   const future = progress
     .filter(
@@ -87,6 +91,11 @@ export function Review() {
           Listening Studio
         </Link>
       </nav>
+      {catalog.error && (
+        <p className="status-banner error" role="alert">
+          {catalog.error}
+        </p>
+      )}
       {fsrsDue.length > 0 && (
         <p className="status-banner" role="status">
           {fsrsDue.length} FSRS objectives are due.{" "}

@@ -35,7 +35,7 @@ export function safeDictionaryReturnHref(
     const url = new URL(value, "https://lexis.invalid");
     if (
       url.origin !== "https://lexis.invalid" ||
-      !/^\/(?:reader(?:\/[A-Za-z0-9_-]+)?|writing(?:\/[A-Za-z0-9_-]+)?|library|dictionary|learn(?:\/(?:practice|grammar))?|core(?:\/(?:network|observatory))?|tutor\/chat|grammar(?:\/[A-Za-z0-9_-]+)?)$/u.test(
+      !/^\/(?:reader(?:\/[A-Za-z0-9_-]+)?|writing(?:\/[A-Za-z0-9_-]+)?|library(?:\/(?:meanings|inbox))?|dictionary|learn(?:\/(?:practice|grammar))?|core(?:\/(?:network|observatory))?|tutor\/chat|grammar(?:\/[A-Za-z0-9_-]+)?)$/u.test(
         url.pathname,
       )
     )
@@ -127,18 +127,21 @@ function readLedger(
 export function buildDictionaryHref({
   query,
   senseId,
+  lexemeId,
   level = "full",
   contextToken,
   returnHref,
 }: {
   query: string;
   senseId?: string;
+  lexemeId?: string;
   level?: "full" | "deep";
   contextToken?: string;
   returnHref?: string;
 }): string {
   const params = new URLSearchParams({ q: query.slice(0, 160), level });
   if (senseId) params.set("sense", senseId.slice(0, 200));
+  if (lexemeId) params.set("entry", lexemeId.slice(0, 200));
   if (contextToken) params.set("visit", contextToken);
   if (returnHref) params.set("return", safeDictionaryReturnHref(returnHref));
   return `/dictionary?${params.toString()}`;

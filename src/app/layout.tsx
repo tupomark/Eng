@@ -3,6 +3,7 @@ import { LearningProvider } from "@/components/learning-provider";
 import { TaskLearningProvider } from "@/components/task-learning-provider";
 import { PwaProvider } from "@/components/pwa";
 import { PreferencesProvider } from "@/components/preferences-provider";
+import { LexicalCatalogProvider } from "@/components/lexical-catalog-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,11 +33,13 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <PreferencesProvider>
-          <LearningProvider>
-            <TaskLearningProvider>
-              <PwaProvider>{children}</PwaProvider>
-            </TaskLearningProvider>
-          </LearningProvider>
+          <LexicalCatalogProvider>
+            <LearningProvider>
+              <TaskLearningProvider>
+                <PwaProvider>{children}</PwaProvider>
+              </TaskLearningProvider>
+            </LearningProvider>
+          </LexicalCatalogProvider>
         </PreferencesProvider>
       </body>
     </html>

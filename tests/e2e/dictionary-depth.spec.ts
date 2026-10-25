@@ -90,7 +90,7 @@ test("editorial forms, POS groups and unknown input remain honest without implic
     .getByRole("searchbox", { name: "Word, form, phrase or translation" })
     .fill("unlisted-phrase");
   await expect(
-    page.getByRole("heading", { name: "Outside this sample.", exact: true }),
+    page.getByRole("heading", { name: "No local entry yet.", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Save selected meaning", exact: true }),

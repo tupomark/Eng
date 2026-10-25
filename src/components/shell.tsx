@@ -13,12 +13,12 @@ import {
   Command,
   Check,
 } from "lucide-react";
-import { seedEntries, findEntry } from "@/infrastructure/dictionary/seed";
 import { useLearning } from "./learning-provider";
 import { Modal } from "./modal";
 import { usePreferences } from "./preferences-provider";
 import { useMaterials } from "./materials/use-materials";
 import { GRAMMAR_CONCEPTS } from "@/domain/writing/grammar";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 
 const navigation = [
   { href: "/", label: "Home", icon: House },
@@ -183,6 +183,7 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
   const router = useRouter();
   const { save, state, ready } = useLearning();
   const materials = useMaterials();
+  const catalog = useLexicalCatalog();
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const documents = normalizedQuery
     ? materials.state.documents
@@ -204,7 +205,7 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
     ? state.saved
         .filter(
           (item) =>
-            !seedEntries.some((entry) =>
+            !catalog.entries.some((entry) =>
               entry.senses.some((sense) => sense.id === item.senseId),
             ) &&
             (item.context + " " + item.senseId)
@@ -222,17 +223,20 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
   const filtered = destinations.filter((item) =>
     item.label.toLowerCase().includes(query.toLowerCase()),
   );
+  const preciseEntry = catalog.findEntry(query);
   const words = query.trim()
-    ? seedEntries.filter(
-        (entry) =>
-          entry.lexeme.lemma.includes(query.trim().toLowerCase()) ||
-          findEntry(query)?.lexeme.id === entry.lexeme.id ||
-          entry.senses.some((sense) =>
-            sense.translation
-              .toLocaleLowerCase()
-              .includes(query.trim().toLocaleLowerCase()),
-          ),
-      )
+    ? catalog.entries
+        .filter(
+          (entry) =>
+            entry.lexeme.lemma.toLocaleLowerCase().includes(normalizedQuery) ||
+            preciseEntry?.lexeme.id === entry.lexeme.id ||
+            entry.senses.some((sense) =>
+              (sense.translation + " " + sense.definition)
+                .toLocaleLowerCase()
+                .includes(query.trim().toLocaleLowerCase()),
+            ),
+        )
+        .slice(0, 12)
     : [];
   const entry = words.find((word) => word.lexeme.id === selected);
   return (
@@ -332,7 +336,7 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
           !concepts.length &&
           !unavailable.length && (
             <p className="muted">
-              No matching spaces or words in the starter dictionary.
+              No matching spaces, local notes or editorial entries.
             </p>
           )}
       </div>
@@ -340,6 +344,11 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
         <div className="command-definition">
           <p className="eyebrow">
             {entry.lexeme.lemma} · {entry.lexeme.ipa}
+          </p>
+          <p className="tiny muted">
+            {entry.provenance.kind === "user-authored"
+              ? "Your own note · not independently verified"
+              : "LEXIS editorial sample"}
           </p>
           {entry.senses.map((sense) => {
             const saved = state.saved.some((item) => item.senseId === sense.id);
@@ -351,7 +360,7 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
                 </p>
                 <button
                   className="button secondary small"
-                  disabled={saved || !ready}
+                  disabled={saved || !ready || !catalog.ready}
                   onClick={() => save(sense.id, sense.example)}
                 >
                   {saved ? (

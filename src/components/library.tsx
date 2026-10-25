@@ -8,7 +8,7 @@ import {
   Bookmark,
   ArrowRight,
 } from "lucide-react";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 import { Shell } from "./shell";
 import { useLearning } from "./learning-provider";
 import { MaterialLibrary } from "./materials/material-library";
@@ -17,6 +17,7 @@ import type { SavedSenseContext } from "@/domain/sense-contexts";
 
 export function Library({ initialQuery = "" }: { initialQuery?: string }) {
   const { state, ready } = useLearning();
+  const catalog = useLexicalCatalog();
   const [query, setQuery] = useState(initialQuery);
   const passages = useSenseContexts();
   const passageRecords = passages.state.contexts;
@@ -32,10 +33,9 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const saved = state.saved
     .map((item) => {
-      const entry = seedEntries.find((entry) =>
-        entry.senses.some((sense) => sense.id === item.senseId),
-      );
-      const sense = entry?.senses.find((sense) => sense.id === item.senseId);
+      const resolved = catalog.findSense(item.senseId);
+      const entry = resolved?.entry;
+      const sense = resolved?.sense;
       return { ...item, entry, sense };
     })
     .filter(({ senseId, context, entry, sense }) =>
@@ -87,6 +87,7 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
             separate passages in Dictionary.
           </p>
         )}
+        {catalog.error && <p role="alert">{catalog.error}</p>}
         <div className="section-heading library-heading">
           <h2>
             Your meanings{" "}
@@ -102,7 +103,12 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
             />
           </label>
         </div>
-        {!ready || !passages.ready ? (
+        <p>
+          <Link className="text-link" href="/library/meanings">
+            Write a meaning from your own notes <ArrowUpRight size={14} />
+          </Link>
+        </p>
+        {!ready || !passages.ready || !catalog.ready ? (
           <p role="status">Opening your collection…</p>
         ) : saved.length ? (
           <div className="meaning-grid">
@@ -118,6 +124,11 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
                 </div>
                 {sense ? (
                   <>
+                    {entry?.provenance.kind === "user-authored" && (
+                      <p className="tiny muted">
+                        Your own note · not independently verified
+                      </p>
+                    )}
                     <p>{sense.definition}</p>
                     <p className="translation" lang="ru">
                       {sense.translation}
@@ -137,6 +148,14 @@ export function Library({ initialQuery = "" }: { initialQuery?: string }) {
                 )}
                 <blockquote>{context}</blockquote>
                 <SavedPassageList items={contextsBySense.get(senseId) ?? []} />
+                {sense && entry && (
+                  <Link
+                    className="text-link"
+                    href={`/dictionary?q=${encodeURIComponent(entry.lexeme.lemma)}&sense=${encodeURIComponent(senseId)}`}
+                  >
+                    Open this meaning <ArrowUpRight size={14} />
+                  </Link>
+                )}
                 {sense ? (
                   <details>
                     <summary>Explore this meaning</summary>

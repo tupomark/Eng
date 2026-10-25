@@ -13,8 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { DictionaryEntry } from "@/domain";
-import { findEntry } from "@/infrastructure/dictionary/seed";
+import type { LookupDictionaryEntry } from "@/application/dictionary-lookup";
 import { sentenceSpans } from "@/domain/contextual-lookup";
 import {
   createDictionaryContextLink,
@@ -26,6 +25,7 @@ import { readLookupSelection } from "@/infrastructure/dictionary/selection-conte
 import { useLearning } from "./learning-provider";
 import { Modal } from "./modal";
 import { ReaderOptions, useReaderPreferences } from "./reader-preferences";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 
 export const READING_TITLE = "The art of noticing";
 
@@ -64,6 +64,11 @@ function startingSection(progress: number): number {
 export function Reader() {
   const router = useRouter();
   const {
+    findEntry,
+    ready: catalogReady,
+    error: catalogError,
+  } = useLexicalCatalog();
+  const {
     state,
     ready,
     error,
@@ -77,7 +82,7 @@ export function Reader() {
   const [lookup, setLookup] = useState<{
     word: string;
     context: string;
-    entry?: DictionaryEntry;
+    entry?: LookupDictionaryEntry | null;
     source?: DictionarySourceAnchor;
   } | null>(null);
   const [selectedSense, setSelectedSense] = useState("");
@@ -137,7 +142,7 @@ export function Reader() {
   }
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !catalogReady) return;
     let current = true;
     let frame = 0;
     void Promise.resolve().then(() => {
@@ -194,7 +199,7 @@ export function Reader() {
       current = false;
       window.cancelAnimationFrame(frame);
     };
-  }, [ready]);
+  }, [ready, catalogReady, findEntry]);
 
   useEffect(() => {
     if (lookup === null && highlightedToken)
@@ -515,8 +520,8 @@ export function Reader() {
                 sentence that brought it to life.
               </p>
               <p className="muted">
-                Eight editorial dictionary entries are available in this offline
-                sample.
+                Look up eight editorial entries and your own notes offline.
+                Multiple matching entries need an explicit choice in Dictionary.
               </p>
               <Link className="text-link" href="/learn">
                 Your review queue <ArrowRight size={15} />
@@ -669,9 +674,11 @@ export function Reader() {
               </details>
             )}
             <p className="dictionary-provenance muted">
-              Offline editorial sample · {lookup.entry.provenance.provider} ·{" "}
-              {lookup.entry.provenance.version}. Original definitions and
-              examples; audio is not included.
+              {lookup.entry.provenance.kind === "user-authored"
+                ? "Your own note · not independently verified"
+                : "Offline editorial sample"}{" "}
+              · {lookup.entry.provenance.provider} ·{" "}
+              {lookup.entry.provenance.version}. Audio is not included.
             </p>
             {contextNavigationError && (
               <p className="status-banner error" role="alert">
@@ -702,15 +709,16 @@ export function Reader() {
         ) : (
           lookup && (
             <div className="empty-state dictionary-empty">
-              <p className="eyebrow">Editorial dictionary</p>
+              <p className="eyebrow">Local dictionary</p>
               <h2>{lookup.word}</h2>
               <p>
-                This word is not included in the first reading dictionary yet.
+                No single local entry could be selected for this word or phrase.
               </p>
               <p className="muted">
-                Try linger, stillness, deliberate, glimpse, beneath, wander,
-                trace or quiet.
+                Search Dictionary to choose between matching entries or add your
+                own meaning.
               </p>
+              {catalogError && <p role="alert">{catalogError}</p>}
               {contextNavigationError && (
                 <p className="status-banner error" role="alert">
                   {contextNavigationError}

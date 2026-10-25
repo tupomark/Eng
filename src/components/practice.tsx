@@ -13,12 +13,12 @@ import type {
   LegacyMigrationPreview,
   TaskRestorePreview,
 } from "@/application/task-session";
+import { type EditorialFormat } from "@/infrastructure/dictionary/editorial-tasks";
 import {
-  editorialTask,
-  recognitionChoices,
-  type EditorialFormat,
-} from "@/infrastructure/dictionary/editorial-tasks";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
+  catalogTask,
+  catalogRecognitionChoices,
+} from "@/infrastructure/dictionary/catalog-tasks";
+import type { LookupDictionaryEntry } from "@/application/dictionary-lookup";
 import { GRAMMAR_CONCEPTS } from "@/domain/writing/grammar";
 import {
   parsePracticeSession,
@@ -31,11 +31,9 @@ import { useTaskLearning } from "./task-learning-provider";
 import { Shell } from "./shell";
 import { knowledgeSkillLabels } from "./knowledge-labels";
 import { usePreferences } from "./preferences-provider";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 import styles from "./practice.module.css";
 
-const meanings = seedEntries.flatMap((entry) =>
-  entry.senses.map((sense) => ({ entry, sense })),
-);
 const ratingLabels = ["again", "hard", "good", "easy"] as const;
 const SESSION_KEY = "lexis.practice-session.v1";
 const SESSION_UPDATED = "lexis-practice-session-updated";
@@ -66,15 +64,21 @@ const promptLabels: Record<string, string> = {
   "editorial-concept-choice": "Grammar choice",
   "editorial-listening-location": "Understand a spoken location",
 };
-function reviewTargetLabel(target: ReviewIdentity["target"]): string {
+function reviewTargetLabel(
+  target: ReviewIdentity["target"],
+  entries: readonly LookupDictionaryEntry[],
+): string {
   if (target.kind === "grammar")
     return (
       GRAMMAR_CONCEPTS.find((concept) => concept.id === target.conceptId)
         ?.title ?? "Unavailable grammar concept"
     );
-  const meaning = meanings.find((item) => item.sense.id === target.senseId);
-  return meaning
-    ? `${meaning.entry.lexeme.lemma} — ${meaning.sense.translation}`
+  const entry = entries.find((item) =>
+    item.senses.some((sense) => sense.id === target.senseId),
+  );
+  const sense = entry?.senses.find((item) => item.id === target.senseId);
+  return entry && sense
+    ? `${entry.lexeme.lemma} — ${sense.translation || sense.definition}`
     : "Unavailable saved meaning";
 }
 export function Practice() {
@@ -82,6 +86,14 @@ export function Practice() {
   const router = useRouter();
   const learning = useLearning();
   const tasks = useTaskLearning();
+  const catalog = useLexicalCatalog();
+  const meanings = useMemo(
+    () =>
+      catalog.entries.flatMap((entry) =>
+        entry.senses.map((sense) => ({ entry, sense })),
+      ),
+    [catalog.entries],
+  );
   const { preferences, change, ready: preferencesReady } = usePreferences();
   const [senseId, setSenseId] = useState(query.get("sense") ?? "linger-stay");
   const [format, setFormat] = useState<EditorialFormat>(() =>
@@ -158,7 +170,10 @@ export function Practice() {
       { scroll: false },
     );
   }
-  const task = editorialTask(senseId, format);
+  const selectedMeaning = catalog.findSense(senseId);
+  const task = selectedMeaning
+    ? catalogTask(selectedMeaning.entry, senseId, format)
+    : null;
   const attempt = task
     ? tasks.state.attempts
         .filter(
@@ -200,9 +215,9 @@ export function Practice() {
             Writing Studio
           </Link>
         </nav>
-        {(tasks.error || learning.error) && (
+        {(tasks.error || learning.error || catalog.error) && (
           <p role="alert" className={styles.error}>
-            {tasks.error || learning.error}
+            {tasks.error || learning.error || catalog.error}
           </p>
         )}
         {notice && <p role="status">{notice}</p>}
@@ -298,13 +313,20 @@ export function Practice() {
                     .filter((item) => session.attemptIds.includes(item.id))
                     .map((item) => item.taskId),
                 );
-                const candidate = meanings.find(
-                  (item) =>
+                const candidate = meanings.find((item) => {
+                  const nextTask = catalogTask(
+                    item.entry,
+                    item.sense.id,
+                    format,
+                  );
+                  return Boolean(
+                    nextTask &&
                     learning.state.saved.some(
                       (saved) => saved.senseId === item.sense.id,
                     ) &&
-                    !practiced.has(editorialTask(item.sense.id, format)!.id),
-                );
+                    !practiced.has(nextTask.id),
+                  );
+                });
                 if (candidate) selectPractice(candidate.sense.id, format);
                 else
                   setNotice(
@@ -322,6 +344,7 @@ export function Practice() {
             <select
               aria-label="Practice meaning"
               value={senseId}
+              disabled={!catalog.ready}
               onChange={(event) => {
                 setSenseId(event.target.value);
                 router.replace(
@@ -331,9 +354,12 @@ export function Practice() {
                 setNotice("");
               }}
             >
+              {!selectedMeaning && (
+                <option value={senseId}>Unavailable saved meaning</option>
+              )}
               {meanings.map(({ entry, sense }) => (
                 <option key={sense.id} value={sense.id}>
-                  {entry.lexeme.lemma} — {sense.translation}
+                  {entry.lexeme.lemma} — {sense.translation || sense.definition}
                 </option>
               ))}
             </select>
@@ -367,21 +393,24 @@ export function Practice() {
         </div>
         {!task ? (
           <p role="status">
-            This meaning is not available in the editorial task collection. Your
-            existing history is preserved.{" "}
+            This meaning is not available in the current practice collection.
+            Your existing history is preserved.{" "}
             <Link href="/library">Return to Library</Link>
           </p>
         ) : (
           <>
             <p className={styles.status}>
-              Original editorial practice · eight-word collection. Open writing
-              answers are saved without a grade until an evaluator is
-              configured.
+              {task.source.kind === "user"
+                ? "Your own note · checks your answer key, not independently verified dictionary accuracy."
+                : "Original editorial practice · eight-word collection."}{" "}
+              Open writing answers are saved without a grade until an evaluator
+              is configured.
             </p>
             <button
               className="button primary"
               disabled={
                 !tasks.ready ||
+                !catalog.ready ||
                 !learning.ready ||
                 !sessionReady ||
                 Boolean(sessionError) ||
@@ -446,7 +475,9 @@ export function Practice() {
           ) : (
             tasks.schedules.slice(0, scheduleLimit).map((schedule) => (
               <div className={styles.row} key={schedule.item.id}>
-                <strong>{reviewTargetLabel(schedule.item.target)}</strong>
+                <strong>
+                  {reviewTargetLabel(schedule.item.target, catalog.entries)}
+                </strong>
                 <p>
                   {knowledgeSkillLabels[schedule.item.skill]} ·{" "}
                   {promptLabels[schedule.item.promptFamily] ??
@@ -645,6 +676,7 @@ function LegacySelfCheck({
 }) {
   const tasks = useTaskLearning();
   const { state, now } = useLearning();
+  const catalog = useLexicalCatalog();
   const [revealed, setRevealed] = useState(false);
   const [rated, setRated] = useState(false);
   const ratingInFlight = useRef(false);
@@ -652,9 +684,7 @@ function LegacySelfCheck({
   const schedule = tasks.schedules.find((item) => item.item.id === itemId);
   const target = schedule?.item.target;
   const meaning =
-    target?.kind === "sense"
-      ? meanings.find((item) => item.sense.id === target.senseId)
-      : undefined;
+    target?.kind === "sense" ? catalog.findSense(target.senseId) : undefined;
   if (!schedule || !meaning)
     return (
       <p className={styles.status}>
@@ -742,6 +772,7 @@ function TaskCard({
   attempt: TaskAttempt;
 }) {
   const tasks = useTaskLearning();
+  const catalog = useLexicalCatalog();
   const [answer, setAnswer] = useState(attempt.answer);
   const [saveError, setSaveError] = useState(false);
   const schedule = tasks.schedules.find(
@@ -786,18 +817,20 @@ function TaskCard({
           {task.format === "recognition" ? (
             <fieldset className={styles.choices}>
               <legend>Choose one definition</legend>
-              {recognitionChoices(task).map((choice) => (
-                <label key={choice}>
-                  <input
-                    type="radio"
-                    name={attempt.id}
-                    value={choice}
-                    checked={answer === choice}
-                    onChange={() => persist(choice)}
-                  />
-                  {choice}
-                </label>
-              ))}
+              {catalogRecognitionChoices(task, catalog.entries).map(
+                (choice) => (
+                  <label key={choice}>
+                    <input
+                      type="radio"
+                      name={attempt.id}
+                      value={choice}
+                      checked={answer === choice}
+                      onChange={() => persist(choice)}
+                    />
+                    {choice}
+                  </label>
+                ),
+              )}
             </fieldset>
           ) : (
             <label className={styles.answer}>
