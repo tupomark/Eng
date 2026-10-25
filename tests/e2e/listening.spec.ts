@@ -1,6 +1,116 @@
 import { expect, test, type Page } from "@playwright/test";
 import { resolve } from "node:path";
 
+type MediaDiagnostic = {
+  elapsedMs: number;
+  event: string;
+  element: "audio" | "video" | "document";
+  currentTime: number | null;
+  readyState: number | null;
+  networkState: number | null;
+  paused: boolean | null;
+  seeking: boolean | null;
+  errorCode: number | null;
+  visibility: string;
+  focused: boolean;
+};
+const mediaTimelines = new WeakMap<Page, MediaDiagnostic[]>();
+
+test.beforeEach(async ({ page }) => {
+  const timeline: MediaDiagnostic[] = [];
+  const started = Date.now();
+  mediaTimelines.set(page, timeline);
+  // A Node-side bounded buffer survives navigation/reload. This observes native
+  // events without replacing play(), seeking, permission or media delivery.
+  await page.exposeBinding(
+    "__lexisRecordMediaDiagnostic",
+    (_source, entry: Omit<MediaDiagnostic, "elapsedMs">) => {
+      // Copy the allowlisted scalar fields only, including at the binding
+      // boundary; never attach arbitrary page-supplied objects or strings.
+      const numeric = (value: unknown) =>
+        typeof value === "number" && Number.isFinite(value) ? value : null;
+      timeline.push({
+        elapsedMs: Date.now() - started,
+        event:
+          /^(?:play|playing|pause|waiting|stalled|seeking|seeked|ended|error|loadedmetadata|canplay|visibilitychange)$/u.test(
+            entry.event,
+          )
+            ? entry.event
+            : "unknown",
+        element:
+          entry.element === "audio" || entry.element === "video"
+            ? entry.element
+            : "document",
+        currentTime: numeric(entry.currentTime),
+        readyState: numeric(entry.readyState),
+        networkState: numeric(entry.networkState),
+        paused: typeof entry.paused === "boolean" ? entry.paused : null,
+        seeking: typeof entry.seeking === "boolean" ? entry.seeking : null,
+        errorCode: numeric(entry.errorCode),
+        visibility:
+          entry.visibility === "visible" || entry.visibility === "hidden"
+            ? entry.visibility
+            : "unknown",
+        focused: entry.focused === true,
+      });
+      if (timeline.length > 120) timeline.shift();
+    },
+  );
+  await page.addInitScript(() => {
+    const target = window as typeof window & {
+      __lexisRecordMediaDiagnostic: (entry: unknown) => Promise<void>;
+    };
+    const observe = (event: Event) => {
+      const media =
+        event.target instanceof HTMLMediaElement ? event.target : null;
+      if (!media && event.type !== "visibilitychange") return;
+      // No src/currentSrc, file names, transcript, errors' message or user input.
+      void target
+        .__lexisRecordMediaDiagnostic({
+          event: event.type,
+          element: media?.tagName.toLowerCase() ?? "document",
+          currentTime:
+            media && Number.isFinite(media.currentTime)
+              ? media.currentTime
+              : null,
+          readyState: media?.readyState ?? null,
+          networkState: media?.networkState ?? null,
+          paused: media?.paused ?? null,
+          seeking: media?.seeking ?? null,
+          errorCode: media?.error?.code ?? null,
+          visibility: document.visibilityState,
+          focused: document.hasFocus(),
+        })
+        .catch(() => {});
+    };
+    for (const name of [
+      "play",
+      "playing",
+      "pause",
+      "waiting",
+      "stalled",
+      "seeking",
+      "seeked",
+      "ended",
+      "error",
+      "loadedmetadata",
+      "canplay",
+      "visibilitychange",
+    ])
+      document.addEventListener(name, observe, true);
+  });
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  const timeline = mediaTimelines.get(page) ?? [];
+  mediaTimelines.delete(page);
+  if (testInfo.status !== testInfo.expectedStatus)
+    await testInfo.attach("native-media-events", {
+      body: JSON.stringify(timeline, null, 2),
+      contentType: "application/json",
+    });
+});
+
 async function sampleReady(page: Page) {
   await page.goto("/listening");
   await expect(
