@@ -33,6 +33,25 @@ test("opt-in public shell reopens a private local text and dictionary with the n
       JSON.parse(localStorage.getItem("lexis.materials.v1")!).documents[0]
         .id as string,
   );
+  await page.goto("/library/meanings");
+  const ownForm = page
+    .getByRole("main")
+    .getByRole("form", { name: "Describe your own meaning", exact: true });
+  await ownForm
+    .getByRole("textbox", { name: "English word or expression", exact: true })
+    .fill("harbour");
+  await ownForm
+    .getByRole("textbox", {
+      name: "Your English definition of this meaning",
+      exact: true,
+    })
+    .fill("A sheltered place where boats can stop.");
+  await ownForm
+    .getByRole("button", { name: "Create user-authored meaning", exact: true })
+    .click();
+  await expect(ownForm.getByRole("status")).toContainText(
+    "Your meaning was created on this device.",
+  );
   await page.goto("/offline");
   await page
     .getByRole("button", { name: "Enable offline workspace", exact: true })
@@ -71,8 +90,27 @@ test("opt-in public shell reopens a private local text and dictionary with the n
     page.getByRole("heading", { name: "linger", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText(/Eight authored entries are available offline/u),
+    page.getByText(
+      /Eight editorial entries and your own definitions are available locally/u,
+    ),
   ).toBeVisible();
+  await page
+    .getByRole("searchbox", {
+      name: "Word, form, phrase or translation",
+      exact: true,
+    })
+    .fill("harbour");
+  await expect(
+    page.getByRole("heading", { name: "harbour", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("FULL ENTRY · YOUR DEFINITION · UNVERIFIED", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem("lexis.learning.v1")),
+  ).toBeNull();
   expect(
     await page.evaluate(
       () =>

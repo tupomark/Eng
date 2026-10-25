@@ -608,7 +608,9 @@ test("an explicit own sense wins an ambiguous Reader return without being reassi
   await expect(ownSense).toHaveCount(1);
   await expect(ownSense).not.toBeChecked();
   await ownSense.check();
-  expect(new URL(page.url()).searchParams.get("sense")).toBe(senseId);
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("sense") === senseId,
+  );
   await page
     .getByRole("link", { name: "Return to your source", exact: true })
     .click();
