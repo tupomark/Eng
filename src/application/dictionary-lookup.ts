@@ -4,7 +4,7 @@ export interface DictionaryContentSource {
   provider: string;
   version: string;
   rights: string;
-  kind: "editorial" | "licensed" | "ai-suggestion";
+  kind: "editorial" | "licensed" | "ai-suggestion" | "user-authored";
 }
 export interface LookupDictionaryEntry {
   lexeme: Lexeme;
@@ -28,9 +28,12 @@ export type DictionaryLookupResult =
   | {
       status: "found";
       matches: DictionaryMatch[];
-      coverage: "editorial-sample" | "provider";
+      coverage: "editorial-sample" | "provider" | "local-catalog";
     }
-  | { status: "not-found"; coverage: "editorial-sample" | "provider" }
+  | {
+      status: "not-found";
+      coverage: "editorial-sample" | "provider" | "local-catalog";
+    }
   | {
       status: "unavailable";
       reason:
@@ -47,7 +50,7 @@ export interface DictionaryLookupPort {
     supported: boolean;
     configured: boolean;
     availableNow: boolean;
-    mode: "editorial-cache" | "remote";
+    mode: "editorial-cache" | "local-cache" | "remote";
   };
   lookup(request: DictionaryLookupRequest): Promise<DictionaryLookupResult>;
 }
