@@ -298,7 +298,7 @@ export function DictionarySelectedMeaning({
           )}
         </button>
         {alreadySaved && (
-          <Link className="button secondary" href="/learn">
+          <Link className="button secondary" href="/learn" prefetch={false}>
             Open Smart Review <ArrowRight size={16} />
           </Link>
         )}
@@ -306,6 +306,7 @@ export function DictionarySelectedMeaning({
           <Link
             className="button secondary"
             href={`/learn/practice?sense=${encodeURIComponent(sense.id)}`}
+            prefetch={false}
           >
             Practise this meaning <ArrowRight size={16} />
           </Link>
