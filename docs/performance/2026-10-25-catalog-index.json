@@ -1,0 +1,29 @@
+{
+  "measuredAt": "2026-10-25T10:36:48.937Z",
+  "sourceHead": "a8324ad2bee49af7356fda52bdd19bcac2bb94f7",
+  "sourceSha256": "043be5d497e8c9130e06b17846874fd649e6022f334c20297d37ad3ef931c4ae",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "availableParallelism": 2
+  },
+  "workload": {
+    "catalogEntries": 2000,
+    "visibleInboxRows": 30,
+    "indexedRuns": 100
+  },
+  "results": {
+    "legacyQuadraticPredicateMs": 1000.2495670000001,
+    "legacyMatches": 0,
+    "buildIndexMs": 5.4131589999999505,
+    "indexed30RowsP50Ms": 0.010879000000159067,
+    "indexed30RowsP95Ms": 0.04931399999986752,
+    "exactFormMatches": 1
+  },
+  "limitations": [
+    "Container Node microbenchmark; not iPhone, browser rendering, React reconciliation, web vitals or field p95.",
+    "Index is rebuilt when catalog changes; this measures normalized exact-key lookup after construction.",
+    "Absolute durations depend on concurrent machine load; regression cause is the eliminated nested full-catalog scan."
+  ]
+}

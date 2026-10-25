@@ -1,6 +1,9 @@
 {
   "extends": "../tsconfig.json",
-  "compilerOptions": { "types": ["node"], "incremental": false },
-  "include": ["measure-local-paths.ts"],
+  "compilerOptions": {
+    "types": ["node"],
+    "incremental": false
+  },
+  "include": ["measure-local-paths.ts", "measure-catalog-index.ts"],
   "exclude": ["../node_modules"]
 }
