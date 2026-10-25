@@ -54,6 +54,10 @@ test("two source contexts for one meaning persist/search/export/restore without 
   await page
     .getByRole("link", { name: "Continue reading", exact: true })
     .click();
+  // A client-side Link click can resolve before the Reader navigation commits.
+  // Capture the destination only after it is the actual document URL, otherwise
+  // returning for the second passage can accidentally reopen the import form.
+  await expect(page).toHaveURL(/\/reader\/[^/?#]+(?:[?#].*)?$/u);
   const reader = page.url();
   await openPassage(page, first);
   await page
