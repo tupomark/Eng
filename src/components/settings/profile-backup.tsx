@@ -39,9 +39,38 @@ const names: Record<ProfileJsonSectionId, string> = {
   writing: "Writing drafts and revisions",
   "media-metadata": "Recordings, transcripts and listening positions",
 };
+const countNames: Record<string, readonly [string, string]> = {
+  meanings: ["meaning", "meanings"],
+  observations: ["observation", "observations"],
+  tasks: ["task", "tasks"],
+  attempts: ["attempt", "attempts"],
+  challenges: ["challenge", "challenges"],
+  reviewItems: ["scheduled item", "scheduled items"],
+  reviews: ["review", "reviews"],
+  documents: ["document", "documents"],
+  chapters: ["chapter", "chapters"],
+  bookmarks: ["bookmark", "bookmarks"],
+  batches: ["import batch", "import batches"],
+  rows: ["import row", "import rows"],
+  lexemes: ["dictionary entry", "dictionary entries"],
+  passages: ["passage", "passages"],
+  goals: ["goal", "goals"],
+  settings: ["preference set", "preference sets"],
+  sessions: ["session", "sessions"],
+  conversations: ["conversation", "conversations"],
+  messages: ["message", "messages"],
+  pendingRequests: ["pending request", "pending requests"],
+  drafts: ["draft", "drafts"],
+  revisions: ["revision", "revisions"],
+  conflicts: ["revision conflict", "revision conflicts"],
+  recordings: ["recording", "recordings"],
+};
 const describe = (counts: Record<string, number>) =>
   Object.entries(counts)
-    .map(([label, count]) => `${count} ${label}`)
+    .map(
+      ([label, count]) =>
+        `${count} ${countNames[label]?.[count === 1 ? 0 : 1] ?? label.replace(/([a-z])([A-Z])/gu, "$1 $2").toLowerCase()}`,
+    )
     .join(" · ") || "No saved records";
 const errorMessage = (cause: unknown) =>
   cause instanceof Error

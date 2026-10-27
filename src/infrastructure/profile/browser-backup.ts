@@ -56,6 +56,7 @@ import {
 } from "./operation";
 import { BrowserProfileRestoreJournal } from "./restore-journal";
 import { prepareBrowserProfileRestore } from "@/infrastructure/materials/purge-signal";
+import { readLocalBlobBytes } from "@/infrastructure/storage/read-blob";
 
 export interface ProfileInventorySection {
   id: ProfileJsonSectionId;
@@ -110,8 +111,11 @@ function readLocal(id: ProfileLocalSectionId): string | null {
   assertProfileNotPurging(window.localStorage);
   return window.localStorage.getItem(PROFILE_SECTION_KEYS[id]);
 }
-async function partBytes(body: Blob): Promise<Uint8Array> {
-  return new Uint8Array(await body.arrayBuffer());
+async function partBytes(
+  body: Blob,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  return new Uint8Array(await readLocalBlobBytes(body, { signal }));
 }
 function payloadRaw(payload: ProfileRestorePayload): string | null {
   return parseProfileJsonBody(
@@ -328,7 +332,7 @@ export async function previewBrowserProfileRestore(
     };
     steps.push(step);
     payloads[step.id] = {
-      bytes: await partBytes(createProfileJsonBody(after)),
+      bytes: await partBytes(createProfileJsonBody(after), options.signal),
     };
   }
   for (const id of ids) {
@@ -394,7 +398,10 @@ export async function previewBrowserProfileRestore(
           };
           steps.push(step);
           payloads[step.id] = {
-            bytes: await partBytes(await file.readPart(step.id)),
+            bytes: await partBytes(
+              await file.readPart(step.id),
+              options.signal,
+            ),
             metadata: JSON.stringify(asset),
           };
         }
@@ -596,7 +603,7 @@ export function browserProfileRestoreCoordinator(): ProfileRestoreCoordinator {
         const { blob, ...metadata } = asset;
         return mediaBackupAssetFingerprint({
           ...metadata,
-          sha256: await sha256MediaBytes(await blob.arrayBuffer()),
+          sha256: await sha256MediaBytes(await readLocalBlobBytes(blob)),
         });
       },
       async apply(step, payload, operationId) {

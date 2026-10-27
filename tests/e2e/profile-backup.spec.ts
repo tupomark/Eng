@@ -880,6 +880,8 @@ test("a tampered container or a conflicting sense identity cannot overwrite exis
   try {
     const restored = await destination.newPage();
     capture = await profileCapture(restored, testInfo, "conflict");
+    const runtimeErrors: string[] = [];
+    restored.on("pageerror", (error) => runtimeErrors.push(error.message));
     const { fixture } = await installProfile(restored);
     const catalog = JSON.parse(fixture.raw["lexis.lexical-catalog.v1"]);
     catalog.entries[0].senses[0].definition =
@@ -928,6 +930,7 @@ test("a tampered container or a conflicting sense identity cannot overwrite exis
     expect(after.writing).toEqual(before.writing);
     expect(after.asset).toEqual(before.asset);
     expect(after.session).toEqual(before.session);
+    expect(runtimeErrors).toEqual([]);
     successful = true;
   } finally {
     try {

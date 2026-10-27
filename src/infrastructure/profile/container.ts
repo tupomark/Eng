@@ -5,6 +5,7 @@ import {
   type ProfileBackupPart,
   type ProfileJsonSectionId,
 } from "@/domain/profile-backup";
+import { readLocalBlobBytes } from "@/infrastructure/storage/read-blob";
 
 const MAGIC = "LEXISBK1";
 const HEADER_BYTES = 12;
@@ -92,7 +93,7 @@ export async function hashProfileBlob(
     blob.size > PROFILE_BACKUP_LIMITS.maxJsonPartBytes
   )
     throw invalid();
-  const bytes = exactBytes(await blob.arrayBuffer(), blob.size);
+  const bytes = exactBytes(await readLocalBlobBytes(blob, options), blob.size);
   return hashBytes(bytes, options.signal);
 }
 /** JSON escaping preserves every original UTF-16 code unit, including lone surrogates and absence. */
@@ -253,7 +254,7 @@ export async function openProfileBackupContainer(
   )
     throw invalid();
   const header = exactBytes(
-    await file.slice(0, HEADER_BYTES).arrayBuffer(),
+    await readLocalBlobBytes(file.slice(0, HEADER_BYTES), options),
     HEADER_BYTES,
   );
   abort(options.signal);
@@ -267,7 +268,7 @@ export async function openProfileBackupContainer(
     throw invalid();
   const manifestBlob = file.slice(HEADER_BYTES, HEADER_BYTES + manifestSize);
   const manifestBytes = exactBytes(
-    await manifestBlob.arrayBuffer(),
+    await readLocalBlobBytes(manifestBlob, options),
     manifestSize,
   );
   abort(options.signal);
@@ -309,7 +310,7 @@ export async function openProfileBackupContainer(
         : "application/octet-stream",
     );
     const bytes = exactBytes(
-      await body.arrayBuffer(),
+      await readLocalBlobBytes(body, options),
       location.part.byteLength,
     );
     if ((await hashBytes(bytes, options.signal)) !== location.part.sha256)

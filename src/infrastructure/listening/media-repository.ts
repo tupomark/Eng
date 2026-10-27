@@ -6,6 +6,7 @@ import {
 } from "@/domain/listening/session";
 import { assertLocalWritesAllowed } from "@/infrastructure/materials/purge-signal";
 import { assertProfileRestoreWrite } from "@/infrastructure/profile/operation";
+import { readLocalBlobBytes } from "@/infrastructure/storage/read-blob";
 import {
   canonicalMediaSession,
   createMediaBackupSnapshot,
@@ -709,7 +710,9 @@ export async function readMediaBackupAsset(
     return null;
   }
   if (expectedSha256) {
-    const actual = await sha256MediaBytes(await asset.blob.arrayBuffer());
+    const actual = await sha256MediaBytes(
+      await readLocalBlobBytes(asset.blob, options),
+    );
     checkBackupRead(options);
     if (actual !== expectedSha256)
       throw new Error(
@@ -791,7 +794,9 @@ export async function readMediaBackupSnapshot(
       throw new Error(
         "The media library changed during export. Try preparing the backup again.",
       );
-    const sha256 = await sha256MediaBytes(await asset.blob.arrayBuffer());
+    const sha256 = await sha256MediaBytes(
+      await readLocalBlobBytes(asset.blob, options),
+    );
     checkBackupRead(options);
     assets.push(parseMediaBackupAsset({ ...metadata, sha256 }));
     options?.onProgress?.(assets.length, before.assets.length);
@@ -845,7 +850,7 @@ export async function restoreMediaBackupAsset(
     throw new Error(
       "A backup recording has a different byte length. Nothing was restored.",
     );
-  const data = await blob.arrayBuffer();
+  const data = await readLocalBlobBytes(blob);
   if ((await sha256MediaBytes(data)) !== metadata.sha256)
     throw new Error(
       "A backup recording's fingerprint does not match its bytes. Nothing was restored.",
@@ -864,7 +869,7 @@ export async function restoreMediaBackupAsset(
     const { blob: existingBlob, ...details } = existing;
     const original = parseMediaBackupAsset({
       ...details,
-      sha256: await sha256MediaBytes(await existingBlob.arrayBuffer()),
+      sha256: await sha256MediaBytes(await readLocalBlobBytes(existingBlob)),
     });
     authorizeMediaRestoreStep(
       operationId,
