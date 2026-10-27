@@ -1,6 +1,6 @@
 # LEXIS: решения и источник истины
 
-Обновлено 25 октября 2026. Этот журнал различает продуктовый контракт, инженерные решения текущего среза и фактически проверенную реализацию. Наличие требования в handoff не означает, что оно уже работает в приложении.
+Обновлено 26 октября 2026. Этот журнал различает продуктовый контракт, инженерные решения текущего среза и фактически проверенную реализацию. Наличие требования в handoff не означает, что оно уже работает в приложении.
 
 ## Приоритет источников
 
@@ -106,3 +106,15 @@ TypeScript закреплён на 6.0.3: выбранный typescript-eslint �
 - Все потребители используют общий resolver/index и common task/FSRS store. Выбранный source/sense сохраняется при неоднозначном возврате в Reader; exact index исключает вложенные полные сканирования каталога в Reader/Inbox. Новых библиотек или внешних платных операций этот срез не требует.
 
 Проверки и ограничения — в [user meanings](feature-notes/user-meanings.md) и [PROGRESS](PROGRESS.md). Source snapshots, визуальная концепция и разрешения на внешние расходы/deploy не изменены.
+
+## Инженерное решение 26 октября 2026 — локальный profile recovery
+
+**Основание и инициатор:** инженерная реализация следующего checkpoint в рамках повторно подтверждённого полного ТЗ v2 (ARCH-06, MIG-01, DATA-04, FLOW-10/E23). Это новый технический формат, не исторически утверждённый файловый стандарт или смена концепции LEXIS. Реальные результаты и SHA нового среза отдельно фиксируются в PROGRESS; общий release/live/device статус этим решением не повышается.
+
+- Выбран `.lexis` framed container v1 с ограниченными несжатыми JSON/media parts и SHA-256 manifest/parts. Новая ZIP/backup библиотека не требуется. Пределы: 512 MiB file, 1 MiB manifest, 64 parts, 128 MiB JSON part и 25 MiB media part (10 assets в текущей медиатеке). Hash означает integrity, не encryption/authenticity; downloaded file содержит приватные данные и не зашифрован.
+- JSON wrapper хранит точный `raw: string|null`: не теряет отсутствие ключа или lone UTF-16 surrogates. Corrupt/unsupported contents можно вынести как opaque recovery attachment, но нельзя заявить успешно валидированными/восстановленными или заменить defaults. Exact local allowlist объединяет 12 разделов, не читает Auth secrets, account-prefixed Tutor, caches, purge markers или временные context visits.
+- Restore — preview → выбор разделов/конфликтов → явное подтверждение additive merge → staged journal → guarded steps → readback/receipts → final reconciliation → полный reload. Он сохраняет legacy/sense/task/revision IDs и exclusions; не создаёт учебное evidence от самого переноса. Settings keep-current по умолчанию, pending Tutor request отменяется без восстановления context consent.
+- Общей атомарной транзакции между localStorage/Writing/media IDB нет. Durable staged payloads и marker/epoch дают обнаружение конфликтов, resume и защиту старых вкладок. Partial result называется partial; отсутствие receipt не означает отсутствие записи. Explicit accept-partial не заявляется rollback или полным restore. Несохранённый Writing input должен остаться видимым и остановить подготовку restore.
+- Private media переносится с metadata/binary hashes и session anchors; старый checkbox при импорте не становится выдуманным license record. EPUB backup содержит извлечённую текстовую модель, а не исходный EPUB. Cloud backup/restore drill, account isolation, автоматическая синхронизация и hardware iPhone остаются отдельными gates.
+
+Влияние: общий recovery workspace Settings, pure section plans/coordinator, browser container/journal и Writing/media adapters. Продуктовые модули, разрешения на расходы/deploy и исходные snapshots не изменены. Подробный протокол — в [архитектуре](architecture.md#общий-локальный-backup-и-восстановление--26-октября) и [модели данных](data-model.md#portable-local-profile-v1).

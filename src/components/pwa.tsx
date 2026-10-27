@@ -1,4 +1,5 @@
 "use client";
+import { subscribeToProfileRestore } from "@/infrastructure/materials/purge-signal";
 import {
   createContext,
   useCallback,
@@ -196,6 +197,21 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("beforeinstallprompt", installPrompt);
     window.addEventListener("appinstalled", installed);
     window.addEventListener("lexis-local-purge", purge);
+    const stopRestore = subscribeToProfileRestore(() => {
+      purged.current = true;
+      reloadOnChange.current = false;
+      prompt.current = null;
+      listeners.current.splice(0).forEach((dispose) => dispose());
+      setReady(false);
+      setBusy(false);
+      setUpdate(false);
+      setInstallable(false);
+      setBlocked(true);
+      setError(
+        "Offline setup and app updates are paused for profile recovery. Finish recovery, then reopen LEXIS.",
+      );
+      return activeSetup.current ?? Promise.resolve();
+    });
     navigator.serviceWorker?.addEventListener("controllerchange", controlled);
     return () => {
       window.removeEventListener("online", onlineChanged);
@@ -203,6 +219,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("beforeinstallprompt", installPrompt);
       window.removeEventListener("appinstalled", installed);
       window.removeEventListener("lexis-local-purge", purge);
+      stopRestore();
       navigator.serviceWorker?.removeEventListener(
         "controllerchange",
         controlled,

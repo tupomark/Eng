@@ -105,6 +105,27 @@
   display: grid;
   gap: 16px;
 }
+.selection {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.selection legend {
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+.selection > label {
+  min-height: 44px;
+}
+.description {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
 @media (max-width: 600px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);

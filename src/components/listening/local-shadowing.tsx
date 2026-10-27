@@ -4,6 +4,7 @@ import styles from "@/components/materials/materials.module.css";
 import {
   localPurgePending,
   subscribeToLocalPurge,
+  subscribeToProfileRestore,
 } from "@/infrastructure/materials/purge-signal";
 
 /** A visit-local self-listening recorder. No transcription or pronunciation grade. */
@@ -49,6 +50,13 @@ export function LocalShadowing({ beforeRecord }: { beforeRecord: () => void }) {
       setRecordingUrl(null);
       setConsent(false);
     });
+    const unsubscribeRestore = subscribeToProfileRestore(() => {
+      cancel();
+      setConsent(false);
+      setError(
+        "Recording stopped for profile recovery. This visit's recording remains available until you leave; it is not part of the profile backup.",
+      );
+    });
     return () => {
       mounted.current = false;
       cancel();
@@ -57,6 +65,7 @@ export function LocalShadowing({ beforeRecord }: { beforeRecord: () => void }) {
       window.removeEventListener("blur", cancel);
       document.removeEventListener("visibilitychange", hide);
       unsubscribePurge();
+      unsubscribeRestore();
     };
     // Capture cleanup owns its resources for the complete mounted visit.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -19,6 +19,7 @@ import {
 } from "@/infrastructure/storage/preferences";
 import { suspendLocalWrites } from "@/infrastructure/storage/local-write-guard";
 import "./preferences-motion.css";
+import { subscribeToProfileRestore } from "@/infrastructure/materials/purge-signal";
 
 interface PreferencesValue {
   preferences: Preferences;
@@ -106,9 +107,17 @@ export function PreferencesProvider({
       };
     window.addEventListener("storage", sync);
     window.addEventListener("lexis-local-purge", stop);
+    const stopRestore = subscribeToProfileRestore(() => {
+      paused.current = true;
+      repository.current = null;
+      setError(
+        "Preferences are paused for profile recovery. Finish recovery, then reopen LEXIS to use the restored profile.",
+      );
+    });
     return () => {
       window.removeEventListener("storage", sync);
       window.removeEventListener("lexis-local-purge", stop);
+      stopRestore();
       channel?.close();
     };
   }, [reload]);
@@ -120,7 +129,7 @@ export function PreferencesProvider({
     try {
       if (paused.current)
         throw new Error(
-          "This page is paused for local data removal. Start a fresh profile after deletion completes.",
+          "This page is paused for a local profile operation. Finish it, then reopen LEXIS before changing preferences.",
         );
       if (!repository.current)
         throw new Error(

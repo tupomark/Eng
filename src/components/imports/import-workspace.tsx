@@ -24,6 +24,10 @@ import {
   addImportBatch,
 } from "@/infrastructure/materials/materials-repository";
 import styles from "@/components/materials/materials.module.css";
+import {
+  localPurgePending,
+  subscribeToProfileRestore,
+} from "@/infrastructure/materials/purge-signal";
 
 export function ImportWorkspace() {
   const materials = useMaterials();
@@ -44,6 +48,17 @@ export function ImportWorkspace() {
   const [savedHref, setSavedHref] = useState<string | null>(null);
   const cancel = useRef<AbortController | null>(null);
   useEffect(() => () => cancel.current?.abort(), []);
+  useEffect(
+    () =>
+      subscribeToProfileRestore(() => {
+        cancel.current?.abort();
+        setBusy(false);
+        setError(
+          "Import is paused for profile recovery. Your selected file and pasted text are still here. Finish recovery, then reopen LEXIS.",
+        );
+      }),
+    [],
+  );
   function resetPreview() {
     setPreview(null);
     setSavedHref(null);
@@ -52,7 +67,7 @@ export function ImportWorkspace() {
     setRights(false);
   }
   async function prepare() {
-    if (busy) return;
+    if (busy || localPurgePending()) return;
     const controller = new AbortController();
     cancel.current = controller;
     setBusy(true);

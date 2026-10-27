@@ -31,7 +31,10 @@ import {
   USER_LEXICAL_CATALOG_KEY,
 } from "@/infrastructure/storage/browser-lexical-catalog";
 import { assertLocalWritesAllowed } from "@/infrastructure/storage/local-write-guard";
-import { subscribeToLocalPurge } from "@/infrastructure/materials/purge-signal";
+import {
+  subscribeToLocalPurge,
+  subscribeToProfileRestore,
+} from "@/infrastructure/materials/purge-signal";
 import { normalizeLookupQuery } from "@/domain/contextual-lookup";
 
 export interface UserLexicalDraft {
@@ -123,10 +126,19 @@ export function LexicalCatalogProvider({
       );
       setReady(true);
     });
+    const releaseRestore = subscribeToProfileRestore(() => {
+      paused.current = true;
+      current.current = null;
+      setError(
+        "Your definitions are paused for profile recovery. They remain visible here. Finish recovery, then reopen LEXIS.",
+      );
+      setReady(true);
+    });
     return () => {
       active = false;
       window.removeEventListener("storage", changed);
       release();
+      releaseRestore();
     };
   }, [reload]);
   const writable = useCallback(() => {

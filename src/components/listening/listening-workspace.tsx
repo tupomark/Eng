@@ -33,6 +33,7 @@ import { LocalShadowing } from "./local-shadowing";
 import {
   localPurgePending,
   subscribeToLocalPurge,
+  subscribeToProfileRestore,
 } from "@/infrastructure/materials/purge-signal";
 import styles from "@/components/materials/materials.module.css";
 
@@ -173,6 +174,27 @@ export function ListeningWorkspace({
         return queue.current.catch(() => {});
       }),
     [sourceId],
+  );
+  useEffect(
+    () =>
+      subscribeToProfileRestore(() => {
+        readable.current = false;
+        generation.current++;
+        setRemoving(true);
+        setPlaying(false);
+        const element = media.current;
+        element?.pause();
+        element?.removeAttribute("src");
+        element?.load();
+        setReady(false);
+        setImporting(false);
+        setRights(false);
+        setError(
+          "Listening is paused for profile recovery. Your visible answer and transcript are kept here. Finish recovery, then reopen LEXIS.",
+        );
+        return queue.current.catch(() => {});
+      }),
+    [],
   );
   useEffect(() => {
     const token = ++generation.current;

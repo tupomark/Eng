@@ -1,4 +1,5 @@
 "use client";
+import { subscribeToProfileRestore } from "@/infrastructure/materials/purge-signal";
 
 import Link from "next/link";
 import {
@@ -109,9 +110,18 @@ export function LearningGoals() {
     };
     window.addEventListener("storage", sync);
     window.addEventListener("lexis-local-purge", purge);
+    const stopRestore = subscribeToProfileRestore(() => {
+      repository.current = null;
+      setReadable(false);
+      setRestore(null);
+      setError(
+        "Goals are paused for profile recovery. Your visible goal and input remain here. Finish recovery, then reopen LEXIS.",
+      );
+    });
     return () => {
       window.removeEventListener("storage", sync);
       window.removeEventListener("lexis-local-purge", purge);
+      stopRestore();
     };
   }, [load]);
   function commit(next: GoalState) {

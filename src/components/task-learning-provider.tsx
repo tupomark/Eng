@@ -46,6 +46,7 @@ import {
   applyAssessmentWithdrawals,
   withdrawnTaskDefinition,
 } from "@/application/assessment-withdrawals";
+import { subscribeToProfileRestore } from "@/infrastructure/materials/purge-signal";
 
 type Help =
   { kind: "hint"; hintId: string } | { kind: "answer" | "transcript" };
@@ -145,9 +146,17 @@ export function TaskLearningProvider({
     };
     window.addEventListener("storage", sync);
     window.addEventListener("lexis-local-purge", purge);
+    const stopRestore = subscribeToProfileRestore(() => {
+      session.current = null;
+      setReadable(false);
+      setError(
+        "Practice changes are paused for profile recovery. Your history remains intact. Finish recovery, then reopen LEXIS.",
+      );
+    });
     return () => {
       window.removeEventListener("storage", sync);
       window.removeEventListener("lexis-local-purge", purge);
+      stopRestore();
     };
   }, [reload]);
   const run = useCallback(

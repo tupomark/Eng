@@ -30,6 +30,11 @@ const navigation = [
 const destinations = [
   ...navigation,
   { href: "/settings", label: "Settings", icon: House },
+  {
+    href: "/settings/backup",
+    label: "Profile export and restore",
+    icon: House,
+  },
   { href: "/offline", label: "Offline workspace", icon: House },
   { href: "/tutor/chat", label: "Text Tutor", icon: AudioLines },
   { href: "/dictionary", label: "Dictionary", icon: BookOpen },

@@ -1,6 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import { ArrowLeft, ArrowRight, Download, Send, Square } from "lucide-react";
 import {
   TUTOR_BLUEPRINTS,
@@ -28,6 +34,7 @@ import {
 import { Shell } from "../shell";
 import { Modal } from "../modal";
 import styles from "./chat.module.css";
+import { subscribeToProfileRestore } from "@/infrastructure/materials/purge-signal";
 
 type Capability = {
   tutor: {
@@ -51,6 +58,7 @@ export function TutorChat({
   const current = useRef(state),
     repository = useRef<BrowserTutorRepository | null>(null);
   const profileGeneration = useRef(0);
+  const profileRequest = useRef<AbortController | null>(null);
   const locked = useRef(false);
   const mounted = useRef(false);
   const [ready, setReady] = useState(false),
@@ -83,10 +91,22 @@ export function TutorChat({
       ? [visitToken]
       : [];
   const backHref = safeDictionaryReturnHref(context?.returnHref ?? returnHref);
+  const assertComposerSaved = useEffectEvent(() => {
+    const draft = current.current.sessions.find(
+      (item) => item.id === current.current.activeSessionId,
+    )?.draft;
+    if (composerRef.current && composerRef.current !== draft)
+      throw new Error(
+        "Tutor has unsaved input. Copy your question before restoring the profile.",
+      );
+  });
 
   const loadProfile = useCallback(async () => {
     if (locked.current || !mounted.current) return;
     const generation = ++profileGeneration.current;
+    profileRequest.current?.abort();
+    const profileController = new AbortController();
+    profileRequest.current = profileController;
     activeRequest.current?.controller.abort();
     activeRequest.current = null;
     setPending(false);
@@ -94,7 +114,10 @@ export function TutorChat({
     try {
       const response = await fetch("/api/account", {
         cache: "no-store",
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.any([
+          profileController.signal,
+          AbortSignal.timeout(15_000),
+        ]),
       });
       if (!response.ok)
         throw new Error(
@@ -199,6 +222,7 @@ export function TutorChat({
     const ended = () => {
       locked.current = true;
       profileGeneration.current += 1;
+      profileRequest.current?.abort();
       activeRequest.current?.controller.abort();
       activeRequest.current = null;
       repository.current = null;
@@ -219,15 +243,36 @@ export function TutorChat({
     window.addEventListener("focus", onFocus);
     window.addEventListener("lexis:account-session-ended", ended);
     window.addEventListener("lexis-local-purge", ended);
+    const releaseRestore = subscribeToProfileRestore(
+      (reason) => {
+        if (reason !== "forced") assertComposerSaved();
+        locked.current = true;
+        profileGeneration.current += 1;
+        profileRequest.current?.abort();
+        activeRequest.current?.controller.abort();
+        activeRequest.current = null;
+        setReady(false);
+        setPending(false);
+        setAllowProcessing(false);
+        setAllowContext(false);
+        setAllowHistory(false);
+        setStatus(
+          "Tutor is paused for profile recovery. Your visible input and conversation are kept here; no pending request will resume automatically.",
+        );
+      },
+      () => assertComposerSaved(),
+    );
     return () => {
       alive = false;
       mounted.current = false;
       profileGeneration.current += 1;
+      profileRequest.current?.abort();
       activeRequest.current?.controller.abort();
       activeRequest.current = null;
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("lexis:account-session-ended", ended);
       window.removeEventListener("lexis-local-purge", ended);
+      releaseRestore();
     };
   }, [loadProfile, visitToken]);
 

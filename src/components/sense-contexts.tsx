@@ -15,7 +15,10 @@ import {
   SENSE_CONTEXTS_KEY,
   SENSE_CONTEXTS_LIMIT,
 } from "@/infrastructure/storage/browser-sense-contexts";
-import { subscribeToLocalPurge } from "@/infrastructure/materials/purge-signal";
+import {
+  subscribeToLocalPurge,
+  subscribeToProfileRestore,
+} from "@/infrastructure/materials/purge-signal";
 import { assertLocalWritesAllowed } from "@/infrastructure/storage/local-write-guard";
 const CHANGE = "lexis-sense-contexts-change";
 const message = (error: unknown) =>
@@ -65,9 +68,18 @@ export function useSenseContexts() {
       );
       setReady(true);
     });
+    const releaseRestore = subscribeToProfileRestore(() => {
+      paused.current = true;
+      current.current = null;
+      setError(
+        "Saved passages are paused for profile recovery. Existing passages remain visible. Finish recovery, then reopen LEXIS.",
+      );
+      setReady(true);
+    });
     return () => {
       mounted = false;
       release();
+      releaseRestore();
       window.removeEventListener("storage", changed);
       window.removeEventListener(CHANGE, reload);
     };

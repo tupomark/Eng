@@ -27,6 +27,8 @@ S0 исправления предшествуют расширению поль
 
 ## Проверка после каждого совместимого изменения
 
+Текущий срез 26–27 октября — общий local-profile export/restore (ARCH-06, DATA-04, MIG-01, FLOW-10/E23): выбранные stores и media → integrity/preview → additive guarded restore → readback/resume → новый document generation. Точные результаты, source SHA и следующий файл продолжения находятся в последней записи [PROGRESS](PROGRESS.md). Это не облачная миграция или завершение S2/S9. После этого среза следующий независимый шаг — расширить существующие small-command/repository contracts для версионированного local→account transfer preview и resume; live A/B/two-device gate остаётся зависимым от test-инфраструктуры.
+
 1. Проверить точные изменённые contracts и негативные случаи подходящими unit/application/DB tests; не писать зеркальные проверки ради количества.
 2. Пройти strict typecheck, lint/formatting и production build для готового набора изменений; браузерные journeys проверяют реальное действие→данные→reopen.
 3. Для UI получить реальные mobile/desktop captures из указанного SHA и проверить длинный RU/IPA, keyboard/focus/200%/reduced motion. Hardware iPhone не заменяется preset.

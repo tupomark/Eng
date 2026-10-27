@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import { ArrowLeft, ArrowUpRight, Download, Plus } from "lucide-react";
 import { Modal } from "@/components/modal";
 import {
@@ -31,7 +37,10 @@ import {
   type WritingRestorePreview,
 } from "@/domain/writing/restore";
 import styles from "./workspace.module.css";
-import { subscribeToLocalPurge } from "@/infrastructure/materials/purge-signal";
+import {
+  subscribeToLocalPurge,
+  subscribeToProfileRestore,
+} from "@/infrastructure/materials/purge-signal";
 
 function download(value: string, filename: string, type: string) {
   const url = URL.createObjectURL(new Blob([value], { type }));
@@ -93,6 +102,12 @@ export function WritingStudio({
     selected && baseRevision && editor !== baseRevision.text,
   );
   const conflicted = Boolean(selected && selected.tips.length > 1);
+  const assertRestoreSafe = useEffectEvent(() => {
+    if (dirty || composing || inFlight.current || (newOpen && newTitle.trim()))
+      throw new Error(
+        "Writing has unsaved input. Save or copy your text before restoring the profile; it remains in the editor.",
+      );
+  });
 
   const choose = useCallback((draft: WritingDraft, focus = false) => {
     if (stoppedForPurge.current) return;
@@ -191,6 +206,26 @@ export function WritingStudio({
         );
         return repository.stopForLocalPurge();
       }),
+    [repository],
+  );
+
+  useEffect(
+    () =>
+      subscribeToProfileRestore(
+        (reason) => {
+          // A user may have typed after the cooperative check was acknowledged.
+          if (reason !== "forced") assertRestoreSafe();
+          stoppedForPurge.current = true;
+          pendingView.current = null;
+          setSaving(false);
+          setRestorePreview(null);
+          setError(
+            "Writing is paused for profile recovery. Your text remains visible for copying. Finish recovery, then reopen LEXIS.",
+          );
+          return repository.stopForLocalPurge();
+        },
+        () => assertRestoreSafe(),
+      ),
     [repository],
   );
 

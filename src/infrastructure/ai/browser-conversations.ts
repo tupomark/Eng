@@ -3,7 +3,7 @@ import {
   parseTutorWorkspace,
   type TutorWorkspaceState,
 } from "@/domain/ai/conversation";
-import { LOCAL_PURGE_MARKER } from "@/infrastructure/storage/preferences";
+import { assertLocalWritesAllowed } from "@/infrastructure/storage/local-write-guard";
 export const TUTOR_STORAGE_PREFIX = "lexis.tutor.v1:";
 export class BrowserTutorRepository {
   private expected: string | null = null;
@@ -58,10 +58,7 @@ export class BrowserTutorRepository {
     return parsed;
   }
   private assertNotPurging() {
-    if (this.storage.getItem(LOCAL_PURGE_MARKER))
-      throw new Error(
-        "Local data deletion is in progress. Tutor writes are paused until recovery is complete.",
-      );
+    assertLocalWritesAllowed(this.storage);
   }
   reset(confirmed: boolean): TutorWorkspaceState {
     this.assertNotPurging();

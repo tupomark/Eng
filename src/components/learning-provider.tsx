@@ -25,6 +25,7 @@ import {
   BrowserLearningRepository,
   STORAGE_KEY,
 } from "@/infrastructure/storage/browser-repository";
+import { subscribeToProfileRestore } from "@/infrastructure/materials/purge-signal";
 
 interface LearningContextValue {
   state: LearningState;
@@ -109,9 +110,17 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("storage", sync);
     window.addEventListener("lexis-local-purge", purge);
+    const stopRestore = subscribeToProfileRestore(() => {
+      session.current = null;
+      undoableSaves.current.clear();
+      setError(
+        "Learning changes are paused for profile recovery. Existing history is preserved. Finish recovery, then reopen LEXIS.",
+      );
+    });
     return () => {
       window.removeEventListener("storage", sync);
       window.removeEventListener("lexis-local-purge", purge);
+      stopRestore();
     };
   }, []);
   const run = useCallback(

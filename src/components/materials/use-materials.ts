@@ -8,7 +8,10 @@ import {
   MATERIALS_STORAGE_KEY,
   MaterialsRepository,
 } from "@/infrastructure/materials/materials-repository";
-import { subscribeToLocalPurge } from "@/infrastructure/materials/purge-signal";
+import {
+  subscribeToLocalPurge,
+  subscribeToProfileRestore,
+} from "@/infrastructure/materials/purge-signal";
 
 const LOCAL_EVENT = "lexis:materials-changed";
 export function useMaterials() {
@@ -55,10 +58,18 @@ export function useMaterials() {
         "Local materials have been paused for deletion. Reopen LEXIS after removal completes.",
       );
     });
+    const unsubscribeRestore = subscribeToProfileRestore(() => {
+      purged.current = true;
+      readable.current = false;
+      setError(
+        "Material changes are paused for profile recovery. Your open material is preserved. Finish recovery, then reopen LEXIS.",
+      );
+    });
     return () => {
       window.removeEventListener("storage", sync);
       window.removeEventListener(LOCAL_EVENT, load);
       unsubscribePurge();
+      unsubscribeRestore();
     };
   }, []);
   const update = useCallback(

@@ -303,6 +303,20 @@ export function Settings() {
         <OfflineSettings />
         <section
           className={`glass-panel ${styles.panel}`}
+          aria-label="Full local profile backup"
+        >
+          <h2>Keep your work together.</h2>
+          <p>
+            Make a private local copy of learning history, your dictionary,
+            books, writing revisions and media. Preview conflicts before
+            restoring; interrupted restoration can be resumed.
+          </p>
+          <Link href="/settings/backup" className="button secondary">
+            Profile export and restore
+          </Link>
+        </section>
+        <section
+          className={`glass-panel ${styles.panel}`}
           aria-label="Preferences backup"
         >
           <h2>Keep a copy of your choices.</h2>
@@ -451,10 +465,10 @@ function LocalProfileRemoval() {
         accounts and server data are a separate scope and are not deleted here.
       </p>
       <p>
-        Export the separate stores above first. Close every other LEXIS tab
-        before continuing; a suspended tab’s temporary storage cannot be
-        verified from this page. Other devices, browser profiles and exported
-        files are outside this action.
+        Export your profile first. Close every other LEXIS tab before
+        continuing; a suspended tab’s temporary storage cannot be verified from
+        this page. Other devices, browser profiles and exported files are
+        outside this action.
       </p>
       {preview && (
         <>

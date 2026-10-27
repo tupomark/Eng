@@ -1,8 +1,13 @@
 import { LOCAL_PURGE_MARKER } from "./preferences";
 import { suspendLocalWrites } from "./local-write-guard";
+import { PROFILE_EPOCH_KEY } from "../profile/operation";
 
 export const LOCAL_PURGE_CONFIRMATION = "DELETE LOCAL PROFILE";
-const KNOWN_DATABASES = ["lexis.writing.v1", "lexis.media.local.v1"];
+const KNOWN_DATABASES = [
+  "lexis.writing.v1",
+  "lexis.media.local.v1",
+  "lexis.profile-backup.v1",
+];
 const PURGE_TIMEOUT_MS = 5000;
 
 export interface PurgeKeyStore {
@@ -28,6 +33,8 @@ export interface LocalProfileEnvironment {
   deleteCache(name: string): Promise<boolean>;
   workers(): Promise<PurgeWorker[]>;
   prepare(): Promise<void>;
+  /** Nonprivate document generation, injectable for deterministic recovery checks. */
+  newEpoch?(): string;
 }
 export interface LocalProfilePreview {
   localKeys: string[];
@@ -49,6 +56,13 @@ export interface LocalProfilePurgeResult {
 
 function ownKey(name: string) {
   return name.startsWith("lexis.");
+}
+function privateLocalKey(name: string) {
+  // The generation token contains no learner data and survives deletion so a
+  // frozen pre-deletion page cannot adopt the fresh profile's first write.
+  return (
+    ownKey(name) && name !== LOCAL_PURGE_MARKER && name !== PROFILE_EPOCH_KEY
+  );
 }
 function ownCache(name: string) {
   return name.startsWith("lexis-") || ownKey(name);
@@ -117,10 +131,7 @@ export async function previewLocalProfile(
 ): Promise<LocalProfilePreview> {
   const result = emptyPreview();
   try {
-    result.localKeys = environment.local
-      .keys()
-      .filter((key) => ownKey(key) && key !== LOCAL_PURGE_MARKER)
-      .sort();
+    result.localKeys = environment.local.keys().filter(privateLocalKey).sort();
     const raw = environment.local.get(LOCAL_PURGE_MARKER);
     result.pending = raw !== null;
     if (raw !== null) {
@@ -247,7 +258,7 @@ export async function purgeLocalProfile(
   // Stopped workers cannot repopulate caches while they are removed below.
   await attempt(() => {
     for (const key of environment.local.keys())
-      if (ownKey(key) && key !== LOCAL_PURGE_MARKER) {
+      if (privateLocalKey(key)) {
         environment.local.remove(key);
         deleted.localKeys.push(key);
       }
@@ -325,9 +336,15 @@ export async function purgeLocalProfile(
 export function restartLocalProfile(
   environment = browserPurgeEnvironment(),
 ): void {
-  const marker: unknown = JSON.parse(
-    environment.local.get(LOCAL_PURGE_MARKER) ?? "null",
-  );
+  const original = environment.local.get(LOCAL_PURGE_MARKER);
+  let marker: unknown;
+  try {
+    marker = JSON.parse(original ?? "null");
+  } catch {
+    throw new Error(
+      "Finish local deletion before starting a fresh profile. Its unreadable safety marker has been preserved.",
+    );
+  }
   if (
     !marker ||
     typeof marker !== "object" ||
@@ -337,7 +354,36 @@ export function restartLocalProfile(
     marker.status !== "complete"
   )
     throw new Error("Finish local deletion before starting a fresh profile.");
+  // Write and verify the new generation while the durable deletion barrier is
+  // still present. Clearing it first would let a frozen old tab recreate data.
+  const previousEpoch = environment.local.get(PROFILE_EPOCH_KEY);
+  let epoch: string;
+  try {
+    epoch = environment.newEpoch?.() ?? crypto.randomUUID();
+    if (
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu.test(
+        epoch,
+      ) ||
+      epoch === previousEpoch
+    )
+      throw new Error("A fresh generation could not be created.");
+    environment.local.set(PROFILE_EPOCH_KEY, epoch);
+    if (environment.local.get(PROFILE_EPOCH_KEY) !== epoch)
+      throw new Error("The fresh generation could not be verified.");
+  } catch {
+    throw new Error(
+      "The fresh profile could not be prepared safely. Deletion remains paused; retry before reopening ordinary work.",
+    );
+  }
+  if (environment.local.get(LOCAL_PURGE_MARKER) !== original)
+    throw new Error(
+      "Local deletion changed while preparing the fresh profile. Its safety marker remains in place; retry deletion before continuing.",
+    );
   environment.local.remove(LOCAL_PURGE_MARKER);
+  if (environment.local.get(LOCAL_PURGE_MARKER) !== null)
+    throw new Error(
+      "The deletion safety marker could not be cleared. Retry starting a fresh profile before reopening ordinary work.",
+    );
 }
 
 function keyStore(storage: Storage): PurgeKeyStore {

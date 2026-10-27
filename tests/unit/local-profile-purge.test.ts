@@ -1,14 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   LOCAL_PURGE_CONFIRMATION,
   previewLocalProfile,
   purgeLocalProfile,
   restartLocalProfile,
+  browserPurgeEnvironment,
   type LocalProfileEnvironment,
   type PurgeKeyStore,
   type PurgeWorker,
 } from "../../src/infrastructure/storage/local-profile-purge";
 import { LOCAL_PURGE_MARKER } from "../../src/infrastructure/storage/preferences";
+import { PROFILE_EPOCH_KEY } from "../../src/infrastructure/profile/operation";
+const freshEpoch = "98dd39c2-960b-4f55-a0b2-07614b8848a7";
 
 function store(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -82,6 +85,7 @@ function fixture() {
     deleteCache: async (name) => caches.delete(name),
     workers: async () => [...workers],
     prepare: vi.fn(async () => {}),
+    newEpoch: () => freshEpoch,
   };
   return {
     env,
@@ -97,6 +101,7 @@ function fixture() {
 }
 
 describe("explicit browser profile removal", () => {
+  afterEach(() => vi.unstubAllGlobals());
   it("previews only LEXIS resources and does not mutate damaged original bytes", async () => {
     const state = fixture();
     expect(await previewLocalProfile(state.env)).toMatchObject({
@@ -149,6 +154,7 @@ describe("explicit browser profile removal", () => {
     );
     restartLocalProfile(state.env);
     expect(state.local.values.has(LOCAL_PURGE_MARKER)).toBe(false);
+    expect(state.local.values.get(PROFILE_EPOCH_KEY)).toBe(freshEpoch);
   });
   it("does not delete anything if the durable safety marker cannot be saved", async () => {
     const state = fixture();
@@ -295,5 +301,155 @@ describe("explicit browser profile removal", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("preserves a nonprivate generation during deletion without counting it as remaining private data", async () => {
+    const state = fixture();
+    const previous = "9c75c984-4b70-4581-b23f-48f02ba2122e";
+    state.local.port.set(PROFILE_EPOCH_KEY, previous);
+    expect((await previewLocalProfile(state.env)).localKeys).not.toContain(
+      PROFILE_EPOCH_KEY,
+    );
+    const removed = await purgeLocalProfile(
+      LOCAL_PURGE_CONFIRMATION,
+      state.env,
+    );
+    expect(removed.complete).toBe(true);
+    expect(removed.deleted.localKeys).not.toContain(PROFILE_EPOCH_KEY);
+    expect(removed.remaining.localKeys).toEqual([]);
+    expect(state.local.port.get(PROFILE_EPOCH_KEY)).toBe(previous);
+    restartLocalProfile(state.env);
+    expect(state.local.port.get(PROFILE_EPOCH_KEY)).toBe(freshEpoch);
+    expect(state.local.port.get(LOCAL_PURGE_MARKER)).toBeNull();
+  });
+
+  it("rotates and verifies the generation before releasing a completed deletion barrier", () => {
+    const state = fixture();
+    state.local.port.set(
+      LOCAL_PURGE_MARKER,
+      '{"version":1,"status":"complete"}',
+    );
+    const originalRemove = state.local.port.remove;
+    state.local.port.remove = (key) => {
+      expect(key).toBe(LOCAL_PURGE_MARKER);
+      expect(state.local.port.get(PROFILE_EPOCH_KEY)).toBe(freshEpoch);
+      originalRemove(key);
+    };
+    restartLocalProfile(state.env);
+    expect(state.local.port.get(LOCAL_PURGE_MARKER)).toBeNull();
+  });
+
+  it("keeps deletion blocked when generation creation, persistence or readback fails", () => {
+    for (const failure of [
+      "invalid",
+      "collision",
+      "denied",
+      "readback",
+    ] as const) {
+      const state = fixture();
+      const complete = '{"version":1,"status":"complete"}';
+      state.local.port.set(LOCAL_PURGE_MARKER, complete);
+      if (failure === "invalid") state.env.newEpoch = () => "not a UUID";
+      if (failure === "collision")
+        state.local.port.set(PROFILE_EPOCH_KEY, freshEpoch);
+      if (failure === "denied")
+        state.local.port.set = () => {
+          throw new Error("Denied");
+        };
+      if (failure === "readback") state.local.port.set = () => {};
+      expect(() => restartLocalProfile(state.env)).toThrow(
+        /could not be prepared safely/u,
+      );
+      expect(state.local.port.get(LOCAL_PURGE_MARKER)).toBe(complete);
+    }
+  });
+
+  it("does not clear a new deletion marker that appeared while preparing the fresh generation", () => {
+    const state = fixture();
+    state.local.port.set(
+      LOCAL_PURGE_MARKER,
+      '{"version":1,"status":"complete"}',
+    );
+    const set = state.local.port.set;
+    state.local.port.set = (key, value) => {
+      set(key, value);
+      if (key === PROFILE_EPOCH_KEY)
+        set(LOCAL_PURGE_MARKER, '{"version":1,"status":"deleting"}');
+    };
+    expect(() => restartLocalProfile(state.env)).toThrow(/deletion changed/u);
+    expect(JSON.parse(state.local.port.get(LOCAL_PURGE_MARKER)!)).toEqual({
+      version: 1,
+      status: "deleting",
+    });
+  });
+
+  it("preserves an unreadable deletion marker and does not report a silent removal as success", () => {
+    const state = fixture();
+    state.local.port.set(LOCAL_PURGE_MARKER, "{original damaged marker");
+    expect(() => restartLocalProfile(state.env)).toThrow(
+      /unreadable safety marker has been preserved/u,
+    );
+    expect(state.local.port.get(LOCAL_PURGE_MARKER)).toBe(
+      "{original damaged marker",
+    );
+    expect(state.local.port.get(PROFILE_EPOCH_KEY)).toBeNull();
+    state.local.port.set(
+      LOCAL_PURGE_MARKER,
+      '{"version":1,"status":"complete"}',
+    );
+    state.local.port.remove = () => {};
+    expect(() => restartLocalProfile(state.env)).toThrow(
+      /could not be cleared/u,
+    );
+    expect(state.local.port.get(LOCAL_PURGE_MARKER)).not.toBeNull();
+  });
+
+  it("blocks a frozen page's first stale write after a completed deletion and fresh start", async () => {
+    const state = fixture();
+    const storage = { getItem: (key: string) => state.local.port.get(key) };
+    vi.stubGlobal("window", { localStorage: storage });
+    vi.resetModules();
+    const { assertLocalWritesAllowed } =
+      await import("@/infrastructure/storage/local-write-guard");
+    // No write/guard call or purge event is delivered to this old document.
+    state.local.port.set(
+      LOCAL_PURGE_MARKER,
+      '{"version":1,"status":"complete"}',
+    );
+    restartLocalProfile(state.env);
+    expect(() => assertLocalWritesAllowed(storage)).toThrow(
+      /earlier local profile/u,
+    );
+  });
+
+  it("includes private staged recovery payloads in known database cleanup on limited browsers", async () => {
+    const values = new Map<string, string>();
+    const storage = {
+      get length() {
+        return values.size;
+      },
+      key: (index: number) => [...values.keys()][index] ?? null,
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        values.set(key, value);
+      },
+      removeItem: (key: string) => {
+        values.delete(key);
+      },
+    };
+    vi.stubGlobal("window", {
+      indexedDB: {},
+      location: { origin: "https://lexis.test" },
+      localStorage: storage,
+      sessionStorage: storage,
+    });
+    expect(await browserPurgeEnvironment().databases()).toEqual({
+      names: [
+        "lexis.writing.v1",
+        "lexis.media.local.v1",
+        "lexis.profile-backup.v1",
+      ],
+      exhaustive: false,
+    });
   });
 });

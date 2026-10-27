@@ -73,6 +73,11 @@ test("damaged preferences stay available for raw export and never get overwritte
 test("confirmed local removal verifies stores and preserves unrelated origin data", async ({
   page,
 }) => {
+  const previousEpoch = "4fe4a403-3b0b-46c6-81a0-2c3e7399a8e9";
+  await page.addInitScript((epoch) => {
+    if (localStorage.getItem("lexis.profile-epoch.v1") === null)
+      localStorage.setItem("lexis.profile-epoch.v1", epoch);
+  }, previousEpoch);
   await page.goto("/settings");
   const enumerable = await page.evaluate(
     () => typeof indexedDB.databases === "function",
@@ -88,7 +93,11 @@ test("confirmed local removal verifies stores and preserves unrelated origin dat
     sessionStorage.setItem("unrelated-session", "keep");
     await caches.open("lexis-private-test");
     await caches.open("unrelated-cache");
-    for (const name of ["lexis.private-test.v1", "unrelated-database"]) {
+    for (const name of [
+      "lexis.private-test.v1",
+      "lexis.profile-backup.v1",
+      "unrelated-database",
+    ]) {
       await new Promise<void>((resolve, reject) => {
         const request = indexedDB.open(name, 1);
         request.onsuccess = () => {
@@ -129,12 +138,18 @@ test("confirmed local removal verifies stores and preserves unrelated origin dat
     databases: (await indexedDB.databases()).map((item) => item.name),
     unrelated: localStorage.getItem("unrelated-preference"),
     unrelatedSession: sessionStorage.getItem("unrelated-session"),
+    epoch: localStorage.getItem("lexis.profile-epoch.v1"),
   }));
-  expect(stores.keys).toEqual(["lexis.local-purge.v1"]);
+  expect(stores.keys.sort()).toEqual([
+    "lexis.local-purge.v1",
+    "lexis.profile-epoch.v1",
+  ]);
+  expect(stores.epoch).toBe(previousEpoch);
   expect(stores.temporary).toEqual([]);
   expect(stores.caches).not.toContain("lexis-private-test");
   expect(stores.caches).toContain("unrelated-cache");
   expect(stores.databases).not.toContain("lexis.private-test.v1");
+  expect(stores.databases).not.toContain("lexis.profile-backup.v1");
   expect(stores.databases).toContain("unrelated-database");
   expect(stores.unrelated).toBe("keep");
   expect(stores.unrelatedSession).toBe("keep");
@@ -145,4 +160,11 @@ test("confirmed local removal verifies stores and preserves unrelated origin dat
   expect(
     await page.evaluate(() => localStorage.getItem("lexis.local-purge.v1")),
   ).toBeNull();
+  const freshEpoch = await page.evaluate(() =>
+    localStorage.getItem("lexis.profile-epoch.v1"),
+  );
+  expect(freshEpoch).toMatch(
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu,
+  );
+  expect(freshEpoch).not.toBe(previousEpoch);
 });
