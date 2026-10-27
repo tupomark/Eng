@@ -156,7 +156,9 @@ async function profileCapture(
   return {
     async state(name, detail, target) {
       currentState = name;
-      await expect(page.getByTestId("profile-export-learning")).toBeVisible();
+      await expect(
+        page.getByRole("main").getByTestId("profile-export-learning"),
+      ).toBeVisible();
       await page.evaluate(async () => {
         await document.fonts.ready;
         await new Promise<void>((done) =>
@@ -574,15 +576,20 @@ async function freshContext(
 }
 
 async function previewFile(page: Page, buffer: Buffer) {
-  await page.getByLabel("Backup file", { exact: true }).setInputFiles({
-    name: "original-profile.lexis",
-    mimeType: "application/octet-stream",
-    buffer,
-  });
+  await page
+    .getByRole("main")
+    .getByLabel("Backup file", { exact: true })
+    .setInputFiles({
+      name: "original-profile.lexis",
+      mimeType: "application/octet-stream",
+      buffer,
+    });
   await page
     .getByRole("button", { name: "Preview selected sections", exact: true })
     .click();
-  await expect(page.getByTestId("profile-preview")).toBeVisible();
+  await expect(
+    page.getByRole("main").getByTestId("profile-preview"),
+  ).toBeVisible();
 }
 
 async function confirmRestore(page: Page) {
@@ -716,7 +723,7 @@ test("a whole local profile restores stable histories, draft branches and playab
     await capture?.state(
       "valid-preview",
       "A real additive preview in a separate browser profile: preserved IDs, branch histories and locally stored media; current device settings are kept.",
-      restored.getByTestId("profile-preview"),
+      restored.getByRole("main").getByTestId("profile-preview"),
     );
     await confirmRestore(restored);
     await expect(
@@ -895,19 +902,22 @@ test("a tampered container or a conflicting sense identity cannot overwrite exis
     const before = await readProfile(restored);
     const damaged = Buffer.from(backup);
     damaged[damaged.length - 1] ^= 1;
-    await restored.getByLabel("Backup file", { exact: true }).setInputFiles({
-      name: "damaged.lexis",
-      mimeType: "application/octet-stream",
-      buffer: damaged,
-    });
+    await restored
+      .getByRole("main")
+      .getByLabel("Backup file", { exact: true })
+      .setInputFiles({
+        name: "damaged.lexis",
+        mimeType: "application/octet-stream",
+        buffer: damaged,
+      });
     await expect(restored.getByRole("main").getByRole("alert")).toContainText(
       /integrity|checksum|damaged|could not|does not match/u,
     );
     expect((await readProfile(restored)).raw).toEqual(before.raw);
     await previewFile(restored, backup);
-    await expect(restored.getByTestId("profile-preview")).toContainText(
-      /conflict|different|cannot/u,
-    );
+    await expect(
+      restored.getByRole("main").getByTestId("profile-preview"),
+    ).toContainText(/conflict|different|cannot/u);
     await restored
       .getByRole("checkbox", {
         name: "I have saved my work and reviewed this merge.",
@@ -923,7 +933,7 @@ test("a tampered container or a conflicting sense identity cannot overwrite exis
     await capture?.state(
       "conflicting-preview",
       "A same-ID definition with different original content blocks restoration. Existing local records, writing branches and recording bytes remain unchanged.",
-      restored.getByTestId("profile-preview"),
+      restored.getByRole("main").getByTestId("profile-preview"),
     );
     const after = await readProfile(restored);
     expect(after.raw).toEqual(before.raw);

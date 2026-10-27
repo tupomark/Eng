@@ -129,8 +129,23 @@ test("Reader context is visible locally but is omitted from the request until se
 test("cancelling a pending request keeps the question and ignores a late transport reply", async ({
   page,
 }) => {
+  let releaseReply!: () => void;
+  const heldReply = new Promise<void>((resolve) => {
+    releaseReply = resolve;
+  });
+  let replyHandled!: () => void;
+  const completedReply = new Promise<void>((resolve) => {
+    replyHandled = resolve;
+  });
+  let receivedRequest!: () => void;
+  const interceptedRequest = new Promise<void>((resolve) => {
+    receivedRequest = resolve;
+  });
   await page.route("**/api/tutor/message", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    receivedRequest();
+    // The response must remain pending until Cancel is actually used. A 600ms
+    // race can remove the control while WebKit is scrolling it into view.
+    await heldReply;
     try {
       await route.fulfill({
         status: 503,
@@ -143,36 +158,52 @@ test("cancelling a pending request keeps the question and ignores a late transpo
       });
     } catch {
       /* cancelled browser request */
+    } finally {
+      replyHandled();
     }
   });
-  await page.goto("/tutor/chat");
-  const composer = page.getByRole("textbox", {
-    name: "Your question",
-    exact: true,
-  });
-  await expect(composer).toBeVisible();
-  await composer.fill("Keep this question after cancellation.");
-  await page
-    .getByText("Context & processing permission", { exact: true })
-    .click();
-  await page
-    .getByRole("checkbox", { name: /Allow the configured AI provider/ })
-    .check();
-  await page
-    .getByRole("button", { name: "Send question", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Cancel request", exact: true })
-    .click();
-  await expect(
-    page.getByRole("status").filter({ hasText: "Request cancelled" }),
-  ).toBeVisible();
-  await expect(composer).toHaveValue("Keep this question after cancellation.");
-  await page.reload();
-  await expect(composer).toHaveValue("Keep this question after cancellation.");
-  await expect(
-    page.getByRole("region", { name: "Tutor conversation" }),
-  ).not.toContainText("AI GUIDANCE");
+  try {
+    await page.goto("/tutor/chat");
+    const composer = page.getByRole("textbox", {
+      name: "Your question",
+      exact: true,
+    });
+    await expect(composer).toBeVisible();
+    await composer.fill("Keep this question after cancellation.");
+    await page
+      .getByText("Context & processing permission", { exact: true })
+      .click();
+    await page
+      .getByRole("checkbox", { name: /Allow the configured AI provider/ })
+      .check();
+    await page
+      .getByRole("button", { name: "Send question", exact: true })
+      .click();
+    await interceptedRequest;
+    await page
+      .getByRole("button", { name: "Cancel request", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status").filter({ hasText: "Request cancelled" }),
+    ).toBeVisible();
+    releaseReply();
+    await completedReply;
+    await expect(
+      page.getByRole("status").filter({ hasText: "Request cancelled" }),
+    ).toBeVisible();
+    await expect(composer).toHaveValue(
+      "Keep this question after cancellation.",
+    );
+    await page.reload();
+    await expect(composer).toHaveValue(
+      "Keep this question after cancellation.",
+    );
+    await expect(
+      page.getByRole("region", { name: "Tutor conversation" }),
+    ).not.toContainText("AI GUIDANCE");
+  } finally {
+    releaseReply();
+  }
 });
 
 test("revoking processing permission cancels the active request without losing the draft", async ({

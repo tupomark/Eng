@@ -76,17 +76,20 @@ test("profile recovery refuses unsaved composing Writing in another tab before s
     const storedWriting = await readWriting(writing);
 
     await page.bringToFront();
-    await page.getByLabel("Backup file", { exact: true }).setInputFiles({
-      name: "generated-profile.lexis",
-      mimeType: "application/octet-stream",
-      buffer: backup,
-    });
+    await page
+      .getByRole("main")
+      .getByLabel("Backup file", { exact: true })
+      .setInputFiles({
+        name: "generated-profile.lexis",
+        mimeType: "application/octet-stream",
+        buffer: backup,
+      });
     await page
       .getByRole("button", { name: "Preview selected sections", exact: true })
       .click();
-    await expect(page.getByTestId("profile-preview")).toContainText(
-      "Add / merge",
-    );
+    await expect(
+      page.getByRole("main").getByTestId("profile-preview"),
+    ).toContainText("Add / merge");
 
     await writing.bringToFront();
     // A controlled composition keeps autosave pending. This tests the browser
@@ -125,7 +128,9 @@ test("profile recovery refuses unsaved composing Writing in another tab before s
     ).toEqual({ learning: null, marker: null, epoch: null, journal: false });
     await expect(editor).toHaveValue(unsaved);
     expect(await readWriting(writing)).toEqual(storedWriting);
-    await expect(page.getByTestId("profile-preview")).toBeVisible();
+    await expect(
+      page.getByRole("main").getByTestId("profile-preview"),
+    ).toBeVisible();
   } finally {
     await writing.close();
   }
