@@ -4,45 +4,13 @@ import { assertLocalWritesAllowed } from "@/infrastructure/storage/local-write-g
 import { useEffect, useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { Modal } from "./modal";
+import {
+  DEFAULT_READER_PREFERENCES as defaults,
+  parseReaderPreferences,
+  type ReaderPreferences,
+} from "@/domain/reader-preferences";
 
 const PREFERENCES_KEY = "lexis.reader.preferences.v1";
-
-interface ReaderPreferences {
-  version: 1;
-  font: "sans" | "serif";
-  fontSize: 18 | 20 | 23;
-  lineSpacing: "comfortable" | "roomy";
-}
-
-const defaults: ReaderPreferences = {
-  version: 1,
-  font: "sans",
-  fontSize: 20,
-  lineSpacing: "comfortable",
-};
-
-function parsePreferences(raw: string): ReaderPreferences {
-  const value: unknown = JSON.parse(raw);
-  if (typeof value !== "object" || value === null || Array.isArray(value))
-    throw new Error("Invalid reading preferences.");
-  const record = value as Record<string, unknown>;
-  if (
-    Object.keys(record).length !== 4 ||
-    record.version !== 1 ||
-    (record.font !== "sans" && record.font !== "serif") ||
-    (record.fontSize !== 18 &&
-      record.fontSize !== 20 &&
-      record.fontSize !== 23) ||
-    (record.lineSpacing !== "comfortable" && record.lineSpacing !== "roomy")
-  )
-    throw new Error("Invalid reading preferences.");
-  return {
-    version: 1,
-    font: record.font,
-    fontSize: record.fontSize,
-    lineSpacing: record.lineSpacing,
-  };
-}
 
 export function useReaderPreferences() {
   const [preferences, setPreferences] = useState<ReaderPreferences>(defaults);
@@ -64,7 +32,8 @@ export function useReaderPreferences() {
         return;
       }
       try {
-        const loaded = raw === null ? defaults : parsePreferences(raw);
+        const loaded =
+          raw === null ? defaults : parseReaderPreferences(JSON.parse(raw));
         current.current = loaded;
         setPreferences(loaded);
         blocked.current = false;
