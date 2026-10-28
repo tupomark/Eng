@@ -1,0 +1,57 @@
+{
+  "result": "captured",
+  "generatedAt": "2026-10-27T22:40:04.271Z",
+  "sourceSHA": "d1261b090d116b1353f0f68ed0fc5a0ea35e95e8",
+  "builtSourceSHA": "baa730346df0c1cebd6c6e79ac19c0bdd50115c5",
+  "checkoutHead": "d1261b090d116b1353f0f68ed0fc5a0ea35e95e8",
+  "hasUncommittedChanges": true,
+  "productionBuildId": "_mPJ_pdF3d4xL14NjIvDI",
+  "project": "iphone-webkit",
+  "scenario": "inventory",
+  "test": "a whole local profile restores stable histories, draft branches and playable media into a fresh profile without renewing Tutor consent",
+  "browserEngine": "webkit",
+  "browserVersion": "27.2",
+  "screenshots": "Actual viewport captures; CSS animations disabled for a stable still image.",
+  "content": "Fresh isolated browser profiles. Original repository learning, writing and media fixtures; real export/preview/restore UI. The quota-error state is deliberately induced, not a provider outage or production incident.",
+  "limitations": [
+    "Local portable backup is not hosted account persistence, cloud backup or automatic two-device synchronization.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone PWA verification.",
+    "Captures do not prove full accessibility, screen reader/zoom/contrast/performance compliance or final owner visual approval.",
+    "No live AI, dictionary, speech, hosted Auth or external upload is used by these capture journeys."
+  ],
+  "captures": [
+    {
+      "name": "empty-inventory",
+      "filename": "iphone-webkit-empty-inventory.png",
+      "detail": "First-use profile backup inventory before any fixture is installed. No learning progress is invented.",
+      "capturedAt": "2026-10-27T22:40:05.841Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "scrollY": 0,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": true
+    },
+    {
+      "name": "populated-inventory",
+      "filename": "iphone-webkit-populated-inventory.png",
+      "detail": "The actual inventory of original saved meanings, challenged observations, FSRS tasks, chapters, writing branches and a local recording.",
+      "capturedAt": "2026-10-27T22:40:08.441Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "scrollY": 281,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": true
+    }
+  ],
+  "pageErrors": []
+}

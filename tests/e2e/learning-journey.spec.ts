@@ -159,7 +159,7 @@ test("dictionary details are optional and an unreviewed fresh save can be undone
     "editorial-v1",
   );
   await expect(dictionary.locator(".dictionary-provenance")).toContainText(
-    "audio is not included",
+    /audio is not included/iu,
   );
 
   await dictionary.getByRole("link", { name: "Go to Smart Review" }).click();
@@ -289,7 +289,7 @@ test("unknown words explain dictionary coverage and Escape restores keyboard foc
   });
   await expect(dictionary).toBeVisible();
   await expect(dictionary).toContainText(
-    "not included in the first reading dictionary yet",
+    "No single local entry could be selected for this word or phrase.",
   );
   await expect(
     dictionary.getByRole("button", { name: /Save this meaning/ }),
@@ -331,7 +331,9 @@ test("LEXIS Command opens from the keyboard, searches words and navigates to Lea
     exact: true,
   });
   await search.fill("unlistedword");
-  await expect(command).toContainText("No matching spaces or words");
+  await expect(command).toContainText(
+    "No matching spaces, local notes or editorial entries",
+  );
   await search.fill("wander");
   await command.getByRole("button", { name: /^wander/ }).click();
   await expect(command).toContainText("without a fixed route or destination");

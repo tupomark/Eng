@@ -1,0 +1,399 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, BookOpen, Search } from "lucide-react";
+import type { DictionaryLookupResult } from "@/application/dictionary-lookup";
+import {
+  buildDictionaryHref,
+  loadDictionaryVisit,
+  safeDictionaryReturnHref,
+  type DictionaryVisitContext,
+} from "@/infrastructure/dictionary/context-navigation";
+import {
+  DictionarySelectedMeaning,
+  DictionarySenseList,
+} from "./dictionary-entry";
+import { Shell } from "./shell";
+import styles from "./dictionary-workspace.module.css";
+import { SenseContextBackup } from "./sense-contexts";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
+
+export function DictionaryWorkspace({
+  initialQuery = "",
+  initialSenseId = "",
+  initialLexemeId = "",
+  initialLevel = "full",
+  visitToken = "",
+  returnHref = "/library",
+}: {
+  initialQuery?: string;
+  initialSenseId?: string;
+  initialLexemeId?: string;
+  initialLevel?: "full" | "deep";
+  visitToken?: string;
+  returnHref?: string;
+}) {
+  const router = useRouter();
+  const catalog = useLexicalCatalog();
+  const dictionary = catalog.lookup;
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedSenseId, setSelectedSenseId] = useState(initialSenseId);
+  const [selectedLexemeId, setSelectedLexemeId] = useState(initialLexemeId);
+  const [level, setLevel] = useState(initialLevel);
+  const [context, setContext] = useState<DictionaryVisitContext | null>(null);
+  const [contextError, setContextError] = useState("");
+  const [response, setResponse] = useState<{
+    query: string;
+    lookup: typeof dictionary;
+    result: DictionaryLookupResult;
+  } | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [resultLimit, setResultLimit] = useState(30);
+  const result =
+    response?.query === query && response.lookup === dictionary
+      ? response.result
+      : null;
+  const match =
+    result?.status === "found"
+      ? (result.matches.find((candidate) =>
+          candidate.entry.senses.some((sense) => sense.id === selectedSenseId),
+        ) ??
+        result.matches.find(
+          (candidate) => candidate.entry.lexeme.id === selectedLexemeId,
+        ) ??
+        (result.matches.length === 1 ? result.matches[0] : null))
+      : null;
+  const entry = match?.entry ?? null;
+  let backHref = safeDictionaryReturnHref(context?.returnHref ?? returnHref);
+  if (
+    context &&
+    entry &&
+    catalog.findEntry(context.surface, selectedSenseId)?.lexeme.id ===
+      entry.lexeme.id &&
+    entry.senses.some((sense) => sense.id === selectedSenseId)
+  ) {
+    const returnUrl = new URL(backHref, "https://lexis.invalid");
+    if (
+      returnUrl.pathname === "/reader" &&
+      returnUrl.searchParams.has("dictionaryVisit")
+    ) {
+      returnUrl.searchParams.set("sense", selectedSenseId);
+      backHref = returnUrl.pathname + returnUrl.search + returnUrl.hash;
+    }
+  }
+
+  useEffect(() => {
+    let current = true;
+    void Promise.resolve().then(() => {
+      if (!current || !visitToken) return;
+      try {
+        const saved = loadDictionaryVisit(visitToken);
+        setContext(saved);
+        if (!saved)
+          setContextError(
+            "The passage from this visit is no longer available in this tab. Your saved learning data has not been changed.",
+          );
+      } catch {
+        setContextError(
+          "The passage from this visit could not be opened. Your original reading and learning data have not been changed.",
+        );
+      }
+    });
+    return () => {
+      current = false;
+    };
+  }, [visitToken]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void dictionary
+      .lookup({ query, context: context?.excerpt, signal: controller.signal })
+      .then((next) => {
+        if (!controller.signal.aborted)
+          setResponse({ query, lookup: dictionary, result: next });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setResponse({
+            query,
+            lookup: dictionary,
+            result: { status: "unavailable", reason: "provider-error" },
+          });
+      });
+    return () => controller.abort();
+  }, [query, context?.excerpt, retry, dictionary]);
+
+  function updateLocation(
+    nextSense = selectedSenseId,
+    nextLevel = level,
+    nextQuery = query,
+    nextLexemeId = selectedLexemeId,
+  ) {
+    router.replace(
+      buildDictionaryHref({
+        query: nextQuery,
+        senseId: nextSense || undefined,
+        lexemeId: nextLexemeId || undefined,
+        level: nextLevel,
+        contextToken: visitToken || undefined,
+        returnHref: backHref,
+      }),
+      { scroll: false },
+    );
+  }
+  function selectSense(id: string) {
+    setSelectedSenseId(id);
+    updateLocation(id);
+  }
+
+  return (
+    <Shell title="Dictionary">
+      <div className={styles.workspace}>
+        <Link className="text-link" href={backHref}>
+          <ArrowLeft size={16} /> Return to your source
+        </Link>
+        <header className={styles.header}>
+          <p className="eyebrow">MEANINGS IN CONTEXT</p>
+          <h1>Dictionary</h1>
+        </header>
+        <form
+          className={styles.search}
+          onSubmit={(event) => {
+            event.preventDefault();
+            updateLocation();
+          }}
+        >
+          <label htmlFor="full-dictionary-query">
+            Word, form, phrase or translation
+          </label>
+          <div>
+            <Search size={18} />
+            <input
+              id="full-dictionary-query"
+              type="search"
+              autoComplete="off"
+              maxLength={160}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelectedSenseId("");
+                setSelectedLexemeId("");
+                setResultLimit(30);
+              }}
+            />
+            <button className="button secondary" type="submit">
+              Search
+            </button>
+          </div>
+        </form>
+        {contextError && (
+          <p role="alert" className="status-banner error">
+            {contextError}
+          </p>
+        )}
+        {context && (
+          <aside
+            className={styles.context}
+            aria-label="Original lookup context"
+          >
+            <details>
+              <summary>Your selected passage</summary>
+              <blockquote>{context.excerpt}</blockquote>
+              {context.source && (
+                <p className={styles.note}>
+                  Source version {context.source.documentVersion} · chapter{" "}
+                  {context.source.chapterId} · paragraph{" "}
+                  {context.source.paragraphIndex + 1}
+                </p>
+              )}
+            </details>
+          </aside>
+        )}
+        {!result ? (
+          <p role="status">Looking in your local dictionary…</p>
+        ) : result.status === "found" && entry && match ? (
+          <article className={styles.entry}>
+            <header>
+              <p className="eyebrow">
+                FULL ENTRY ·{" "}
+                {entry.provenance.kind === "ai-suggestion"
+                  ? "UNVERIFIED AI SUGGESTION"
+                  : entry.provenance.kind === "licensed"
+                    ? "LICENSED SOURCE"
+                    : entry.provenance.kind === "user-authored"
+                      ? "YOUR DEFINITION · UNVERIFIED"
+                      : "EDITORIAL SAMPLE"}
+              </p>
+              <h2 className={styles.headword}>{entry.lexeme.lemma}</h2>
+              <p className={styles.ipa}>
+                {entry.lexeme.ipa ? `${entry.lexeme.ipa} · ` : ""}
+                {entry.lexeme.partOfSpeech}
+              </p>
+              {match.matchedBy === "form" && (
+                <p className={styles.note}>
+                  Selected form: {query}. Headword: {entry.lexeme.lemma}. This
+                  explicit form mapping does not choose a sense for you.
+                </p>
+              )}
+              {match.forms.length > 0 && (
+                <p className={styles.note}>
+                  Source-supplied forms: {match.forms.join(", ")}
+                </p>
+              )}
+            </header>
+            <nav className={styles.tabs} aria-label="Dictionary detail level">
+              {(["full", "deep"] as const).map((value) => (
+                <button
+                  key={value}
+                  className={`button ${level === value ? "secondary" : "ghost"}`}
+                  aria-pressed={level === value}
+                  onClick={() => {
+                    setLevel(value);
+                    updateLocation(selectedSenseId, value);
+                  }}
+                >
+                  {value === "full" ? "Full Entry" : "Deep Dive"}
+                </button>
+              ))}
+            </nav>
+            <DictionarySenseList
+              entry={entry}
+              selectedSenseId={selectedSenseId}
+              onSelect={selectSense}
+            />
+            <DictionarySelectedMeaning
+              key={`${entry.lexeme.id}:${selectedSenseId}`}
+              entry={entry}
+              selectedSenseId={selectedSenseId}
+              level={level}
+              context={context?.excerpt ?? ""}
+              surface={query.trim() || entry.lexeme.lemma}
+              source={context?.source}
+              onSelect={selectSense}
+            />
+          </article>
+        ) : result.status === "found" ? (
+          <section
+            className={styles.results}
+            aria-label="Dictionary search results"
+          >
+            <h2>
+              {query.trim() ? "Matching entries" : "Explore local entries"}
+            </h2>
+            <p className={styles.note}>
+              {result.matches.length} entries. Choose a source and part of
+              speech, then a specific meaning.
+            </p>
+            {result.matches
+              .slice(0, resultLimit)
+              .map(({ entry: candidate }) => (
+                <button
+                  className={styles.result}
+                  key={candidate.lexeme.id}
+                  onClick={() => {
+                    setQuery(candidate.lexeme.lemma);
+                    setSelectedSenseId("");
+                    setSelectedLexemeId(candidate.lexeme.id);
+                    updateLocation(
+                      "",
+                      level,
+                      candidate.lexeme.lemma,
+                      candidate.lexeme.id,
+                    );
+                  }}
+                >
+                  <BookOpen size={19} />
+                  <span>
+                    <strong>{candidate.lexeme.lemma}</strong>
+                    <span>
+                      {candidate.lexeme.partOfSpeech} ·{" "}
+                      {candidate.provenance.kind === "user-authored"
+                        ? "Your definition"
+                        : "Editorial sample"}{" "}
+                      · {candidate.senses.length}{" "}
+                      {candidate.senses.length === 1 ? "meaning" : "meanings"}
+                    </span>
+                    <span>
+                      {candidate.senses
+                        .map((sense) => sense.definition)
+                        .join("; ")
+                        .slice(0, 240)}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            {result.matches.length > resultLimit && (
+              <button
+                className="button secondary"
+                onClick={() => setResultLimit((limit) => limit + 30)}
+              >
+                Show more entries
+              </button>
+            )}
+          </section>
+        ) : result.status === "not-found" ? (
+          <section className="empty-state glass-panel">
+            <BookOpen size={26} />
+            <h2>No local entry yet.</h2>
+            <p>
+              No entry for “{query}” was found in your definitions or the
+              eight-word editorial sample. Your passage and existing learning
+              history are preserved.
+            </p>
+            <p className={styles.note}>
+              Try a different form or a supported headword, such as linger or
+              trace. A full live dictionary requires a configured, licensed
+              source.
+            </p>
+            <Link
+              href={`/library/meanings?q=${encodeURIComponent(query)}`}
+              className="button secondary"
+            >
+              Write your own definition
+            </Link>
+            <Link href={backHref} className="button ghost">
+              Return to your source
+            </Link>
+          </section>
+        ) : (
+          <section className="empty-state glass-panel">
+            <h2>Dictionary search is unavailable.</h2>
+            <p>
+              No assessment or learning change was recorded. Your input and
+              source remain available.
+            </p>
+            <button
+              className="button secondary"
+              onClick={() => setRetry((value) => value + 1)}
+            >
+              Try search again
+            </button>
+          </section>
+        )}
+        {catalog.error && (
+          <p className="status-banner error" role="alert">
+            {catalog.error} Your stored bytes are preserved.{" "}
+            <Link href="/library/meanings">Open definition recovery</Link>
+          </p>
+        )}
+        <Link className="text-link" href="/library/meanings">
+          Manage your definitions
+        </Link>
+        <details className={styles.coverage}>
+          <summary>
+            Eight editorial entries and your own definitions are available
+            locally.
+          </summary>
+          <p className={styles.note}>
+            Your definitions are private and user-authored, not verified
+            dictionary facts. Live dictionary coverage and licensed audio are
+            awaiting configuration; an absent result does not mean the word is
+            invalid.
+          </p>
+        </details>
+        <SenseContextBackup />
+      </div>
+    </Shell>
+  );
+}

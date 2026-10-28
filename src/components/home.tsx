@@ -1,19 +1,34 @@
 "use client";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, BookOpen, Layers3, Mic } from "lucide-react";
-import { dueSenses } from "@/domain";
+import { useReviewOverview } from "./use-review-overview";
 import { Shell } from "./shell";
 import { Orb } from "./orb";
 import { useLearning } from "./learning-provider";
+import { useMaterials } from "./materials/use-materials";
+import styles from "./home.module.css";
 
 export function Home() {
   const { state, ready } = useLearning();
-  const due = dueSenses(state, new Date()).length;
+  const { total: due, fsrsDue } = useReviewOverview();
+  const materials = useMaterials();
+  const document = materials.state.documents
+    .filter((item) => !item.archivedAt)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .at(0);
+  const documentChapter = document
+    ? Math.max(
+        0,
+        document.chapters.findIndex(
+          (chapter) => chapter.id === document.position.chapterId,
+        ),
+      )
+    : 0;
   const reviews = state.evidence.filter((item) => !item.disputedAt).length;
   const section = Math.min(3, Math.round(state.readerProgress / (100 / 3)) + 1);
   return (
     <Shell title="Home">
-      <div className="home-heading">
+      <div className={`home-heading ${styles.heading}`}>
         <div>
           <p className="eyebrow">YOUR PERSONAL ENGLISH SPACE</p>
           <h1>
@@ -27,14 +42,18 @@ export function Home() {
         </div>
       </div>
       <section
-        className="home-grid balanced-home"
+        className={`home-grid balanced-home ${styles.overview}`}
         aria-label="Your learning overview"
       >
         <article className="continue-card glass-panel">
           <div className="card-label">
             <BookOpen size={17} />
             <span>CONTINUE LEARNING</span>
-            <span className="label-end">0{section} / 03</span>
+            <span className="label-end">
+              {document
+                ? `${documentChapter + 1} / ${document.chapters.length}`
+                : `0${section} / 03`}
+            </span>
           </div>
           <div className="reading-preview">
             <div className="book-cover" aria-hidden="true">
@@ -47,43 +66,89 @@ export function Home() {
               <div className="cover-dune dune-two" />
               <div className="cover-dune dune-three" />
               <small>
-                THE ART
-                <br />
-                OF NOTICING
+                {document ? (
+                  <>
+                    YOUR
+                    <br />
+                    READING
+                  </>
+                ) : (
+                  <>
+                    THE ART
+                    <br />
+                    OF NOTICING
+                  </>
+                )}
               </small>
             </div>
             <div>
-              <p className="eyebrow">A LEXIS ORIGINAL</p>
+              <p className="eyebrow">
+                {document ? "YOUR PRIVATE MATERIAL" : "A LEXIS ORIGINAL"}
+              </p>
               <h2>
-                The art of
-                <br />
-                noticing
+                {document ? (
+                  document.title
+                ) : (
+                  <>
+                    The art of
+                    <br />
+                    noticing
+                  </>
+                )}
               </h2>
-              <p>A slower look at an ordinary day.</p>
+              <p>
+                {document
+                  ? document.chapters[documentChapter]?.title
+                  : "A slower look at an ordinary day."}
+              </p>
               <div className="reading-meta">
-                <span>Sample reading</span>
-                <span>3 short parts</span>
+                <span>
+                  {document ? document.format.toUpperCase() : "Sample reading"}
+                </span>
+                <span>
+                  {document
+                    ? `${document.chapters.length} chapters`
+                    : "3 short parts"}
+                </span>
               </div>
             </div>
           </div>
           <div className="reading-progress">
             <span>
-              {state.readerProgress
-                ? `${Math.round(state.readerProgress)}% explored`
-                : "An open page, ready when you are."}
+              {document
+                ? "Your structural reading place is saved."
+                : state.readerProgress
+                  ? `${Math.round(state.readerProgress)}% explored`
+                  : "An open page, ready when you are."}
             </span>
-            <span>About 3 min</span>
+            <span>{document ? "On this device" : "About 3 min"}</span>
           </div>
-          <div className="progress-track">
-            <span style={{ width: `${state.readerProgress}%` }} />
-          </div>
-          <Link className="button primary" href="/reader">
-            {state.readerProgress > 0 ? "Continue reading" : "Start reading"}
+          {!document && (
+            <div className="progress-track">
+              <span style={{ width: `${state.readerProgress}%` }} />
+            </div>
+          )}
+          <Link
+            className="button primary"
+            href={
+              document
+                ? `/reader/${encodeURIComponent(document.id)}`
+                : "/reader"
+            }
+          >
+            {document || state.readerProgress > 0
+              ? "Continue reading"
+              : "Start reading"}
             <ArrowRight size={17} />
           </Link>
           <p className="sample-disclosure">
-            Local sample · eight-word editorial dictionary
+            {document
+              ? "Your content stays in the local browser profile."
+              : "Local sample · eight-word editorial dictionary"}
           </p>
+          <Link className="text-link" href="/library/import">
+            Bring your own material <ArrowRight size={14} />
+          </Link>
         </article>
         <Link className="living-core-card" href="/core">
           <div className="card-label">
@@ -126,7 +191,9 @@ export function Home() {
             <p className="eyebrow">SMART REVIEW</p>
             <h2>
               {due
-                ? `${due} ${due === 1 ? "meaning" : "meanings"} to revisit`
+                ? fsrsDue.length
+                  ? `${due} review ${due === 1 ? "objective" : "objectives"} ready`
+                  : `${due} ${due === 1 ? "meaning" : "meanings"} to revisit`
                 : "A little, often."}
             </h2>
             <p>

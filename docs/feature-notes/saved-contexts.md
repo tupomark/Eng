@@ -1,0 +1,11 @@
+# Durable saved passages — 24 October 2026
+
+`f583bed` adds `lexis.sense-contexts.v1` alongside the preserved learning v1 store. A learner can save a second passage/structural source for an already saved sense from Dictionary Full/Deep. That operation does not rewrite original learning bytes, add a duplicate saved sense or record knowledge. Library searches the additional passages and shows them in a disclosure. Missing external dictionary entries remain visible through the original unavailable-sense handling.
+
+The strict pure model preserves source version/chapter/paragraph/character anchors and original Unicode excerpt. Duplicate source+surface+excerpt+meaning is idempotent. Store writes validate readable current bytes and expected snapshot, have explicit size/count bounds and respect local profile removal. This is a local best-effort stale-tab guard, not a cloud transaction.
+
+Dictionary provides JSON export and bounded preview/explicit merge restore. Conflicting IDs or malformed/current corrupted bytes stop the operation. A newer file selection invalidates an older asynchronous preview. UTF-8 file bounds accommodate the exact supported character limit, and the final schema/character bounds still apply. Restore keeps stable IDs and can be repeated without duplicates. Download URL cleanup is delayed for Safari.
+
+Removing an additional passage is separate from deleting a meaning or its evidence. The UI explains that the original learning-v1 excerpt remains, and that deleting a book retains deliberately saved learning excerpts. Confirmed complete local profile deletion removes both stores. No source is uploaded or made public by these controls.
+
+Verification on integrated source `e092d1f`: 284/284 unit/database tests, strict production build, lint and formatting passed; the 28-case Chromium/WebKit target run passed on 24 October at 23:14 UTC. That browser run includes a real two-paragraph TXT import → two lookups of the same meaning → reload → export/preview/duplicate restore → Library passage search, while comparing original v1 bytes and checking zero fabricated evidence. These checks cover local behavior, not hosted ownership/sync or physical iPhone gestures. Exact consolidated results are in PROGRESS.

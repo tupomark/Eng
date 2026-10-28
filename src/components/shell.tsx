@@ -13,9 +13,12 @@ import {
   Command,
   Check,
 } from "lucide-react";
-import { seedEntries } from "@/infrastructure/dictionary/seed";
 import { useLearning } from "./learning-provider";
 import { Modal } from "./modal";
+import { usePreferences } from "./preferences-provider";
+import { useMaterials } from "./materials/use-materials";
+import { GRAMMAR_CONCEPTS } from "@/domain/writing/grammar";
+import { useLexicalCatalog } from "./lexical-catalog-provider";
 
 const navigation = [
   { href: "/", label: "Home", icon: House },
@@ -23,6 +26,29 @@ const navigation = [
   { href: "/learn", label: "Learn", icon: Layers3 },
   { href: "/tutor", label: "Tutor", icon: AudioLines },
   { href: "/core", label: "Core", icon: Orbit },
+];
+const destinations = [
+  ...navigation,
+  { href: "/settings", label: "Settings", icon: House },
+  {
+    href: "/settings/backup",
+    label: "Profile export and restore",
+    icon: House,
+  },
+  { href: "/offline", label: "Offline workspace", icon: House },
+  { href: "/tutor/chat", label: "Text Tutor", icon: AudioLines },
+  { href: "/dictionary", label: "Dictionary", icon: BookOpen },
+  { href: "/library/import", label: "Import materials", icon: BookOpen },
+  { href: "/library/inbox", label: "Smart Inbox", icon: Layers3 },
+  { href: "/learn/practice", label: "Smart Cards FSRS", icon: Layers3 },
+  { href: "/writing", label: "Writing Studio", icon: BookOpen },
+  { href: "/grammar", label: "Grammar Atlas", icon: BookOpen },
+  { href: "/listening", label: "Listening Studio", icon: AudioLines },
+  { href: "/core/network", label: "Meaning connections", icon: Orbit },
+  { href: "/goals", label: "Goals", icon: Orbit },
+  { href: "/core/observatory", label: "Knowledge Observatory", icon: Orbit },
+  { href: "/account", label: "Account and privacy", icon: House },
+  { href: "/core/restore", label: "Restore learning backup", icon: Layers3 },
 ];
 export function Shell({
   children,
@@ -32,6 +58,17 @@ export function Shell({
   title?: string;
 }) {
   const pathname = usePathname();
+  const { preferences } = usePreferences();
+  const navLabel = (label: string) =>
+    preferences.uiLanguage === "ru"
+      ? ({
+          Home: "Главная",
+          Library: "Библиотека",
+          Learn: "Практика",
+          Tutor: "Тьютор",
+          Core: "Профиль",
+        }[label] ?? label)
+      : label;
   const [command, setCommand] = useState(false);
   const { error, ready } = useLearning();
   useEffect(() => {
@@ -50,7 +87,12 @@ export function Shell({
         Skip to content
       </a>
       <aside className="sidebar">
-        <Link className="brand" href="/" aria-label="LEXIS home">
+        <Link
+          prefetch={false}
+          className="brand"
+          href="/"
+          aria-label="LEXIS home"
+        >
           <span className="brand-symbol">
             l<span>·</span>
           </span>
@@ -60,13 +102,14 @@ export function Shell({
         <nav className="desktop-nav" aria-label="Main navigation">
           {navigation.map(({ href, label, icon: Icon }) => (
             <Link
+              prefetch={false}
               key={href}
               href={href}
               className={pathname === href ? "nav-item active" : "nav-item"}
               aria-current={pathname === href ? "page" : undefined}
             >
               <Icon size={19} strokeWidth={1.6} />
-              {label}
+              {navLabel(label)}
               {pathname === href && <span className="nav-dot" />}
             </Link>
           ))}
@@ -92,9 +135,14 @@ export function Shell({
               <span>LEXIS Command</span>
               <kbd>⌘ K</kbd>
             </button>
-            <span className="avatar" aria-label="Personal local workspace">
+            <Link
+              prefetch={false}
+              href="/settings"
+              className="avatar"
+              aria-label="Settings and privacy"
+            >
               L
-            </span>
+            </Link>
           </div>
         </header>
         <main id="main" className="main-content">
@@ -120,12 +168,13 @@ export function Shell({
       <nav className="bottom-nav" aria-label="Mobile navigation">
         {navigation.map(({ href, label, icon: Icon }) => (
           <Link
+            prefetch={false}
             key={href}
             href={href}
             aria-current={pathname === href ? "page" : undefined}
           >
             <Icon size={21} strokeWidth={1.6} />
-            <span>{label}</span>
+            <span>{navLabel(label)}</span>
           </Link>
         ))}
       </nav>
@@ -138,19 +187,61 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
   const [selected, setSelected] = useState<string | null>(null);
   const router = useRouter();
   const { save, state, ready } = useLearning();
+  const materials = useMaterials();
+  const catalog = useLexicalCatalog();
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const documents = normalizedQuery
+    ? materials.state.documents
+        .filter(
+          (item) =>
+            !item.archivedAt &&
+            item.title.toLocaleLowerCase().includes(normalizedQuery),
+        )
+        .slice(0, 8)
+    : [];
+  const concepts = normalizedQuery
+    ? GRAMMAR_CONCEPTS.filter((item) =>
+        (item.title + " " + item.description + " " + item.russianRule)
+          .toLocaleLowerCase()
+          .includes(normalizedQuery),
+      ).slice(0, 6)
+    : [];
+  const unavailable = normalizedQuery
+    ? state.saved
+        .filter(
+          (item) =>
+            !catalog.entries.some((entry) =>
+              entry.senses.some((sense) => sense.id === item.senseId),
+            ) &&
+            (item.context + " " + item.senseId)
+              .toLocaleLowerCase()
+              .includes(normalizedQuery),
+        )
+        .slice(0, 6)
+    : [];
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (open) {
       searchRef.current?.focus();
     }
   }, [open]);
-  const filtered = navigation.filter((item) =>
+  const filtered = destinations.filter((item) =>
     item.label.toLowerCase().includes(query.toLowerCase()),
   );
+  const preciseEntry = catalog.findEntry(query);
   const words = query.trim()
-    ? seedEntries.filter((entry) =>
-        entry.lexeme.lemma.includes(query.trim().toLowerCase()),
-      )
+    ? catalog.entries
+        .filter(
+          (entry) =>
+            entry.lexeme.lemma.toLocaleLowerCase().includes(normalizedQuery) ||
+            preciseEntry?.lexeme.id === entry.lexeme.id ||
+            entry.senses.some((sense) =>
+              (sense.translation + " " + sense.definition)
+                .toLocaleLowerCase()
+                .includes(query.trim().toLocaleLowerCase()),
+            ),
+        )
+        .slice(0, 12)
     : [];
   const entry = words.find((word) => word.lexeme.id === selected);
   return (
@@ -175,6 +266,52 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
         />
       </label>
       <div className="command-results">
+        {documents.length > 0 && (
+          <p className="eyebrow">Your local documents</p>
+        )}
+        {documents.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              close();
+              router.push(`/reader/${encodeURIComponent(item.id)}`);
+            }}
+          >
+            <BookOpen size={18} />
+            {item.title}
+            <span className="muted">On this device</span>
+          </button>
+        ))}
+        {concepts.length > 0 && (
+          <p className="eyebrow">Grammar concepts · LEXIS editorial</p>
+        )}
+        {concepts.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              close();
+              router.push(`/grammar?concept=${encodeURIComponent(item.id)}`);
+            }}
+          >
+            <Layers3 size={18} />
+            {item.title}
+          </button>
+        ))}
+        {unavailable.length > 0 && (
+          <p className="eyebrow">Saved contexts · source unavailable</p>
+        )}
+        {unavailable.map((item) => (
+          <button
+            key={item.senseId}
+            onClick={() => {
+              close();
+              router.push(`/library?q=${encodeURIComponent(normalizedQuery)}`);
+            }}
+          >
+            <BookOpen size={18} />
+            <span>{item.context.slice(0, 120)}</span>
+          </button>
+        ))}
         {filtered.map(({ href, label, icon: Icon }) => (
           <button
             key={href}
@@ -198,16 +335,25 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
             <span className="muted">{word.lexeme.partOfSpeech}</span>
           </button>
         ))}
-        {!filtered.length && !words.length && (
-          <p className="muted">
-            No matching spaces or words in the starter dictionary.
-          </p>
-        )}
+        {!filtered.length &&
+          !words.length &&
+          !documents.length &&
+          !concepts.length &&
+          !unavailable.length && (
+            <p className="muted">
+              No matching spaces, local notes or editorial entries.
+            </p>
+          )}
       </div>
       {entry && (
         <div className="command-definition">
           <p className="eyebrow">
             {entry.lexeme.lemma} · {entry.lexeme.ipa}
+          </p>
+          <p className="tiny muted">
+            {entry.provenance.kind === "user-authored"
+              ? "Your own note · not independently verified"
+              : "LEXIS editorial sample"}
           </p>
           {entry.senses.map((sense) => {
             const saved = state.saved.some((item) => item.senseId === sense.id);
@@ -219,7 +365,7 @@ function CommandPalette({ open, close }: { open: boolean; close: () => void }) {
                 </p>
                 <button
                   className="button secondary small"
-                  disabled={saved || !ready}
+                  disabled={saved || !ready || !catalog.ready}
                   onClick={() => save(sense.id, sense.example)}
                 >
                   {saved ? (

@@ -1,0 +1,46 @@
+{
+  "result": "failed",
+  "generatedAt": "2026-10-27T22:40:37.122Z",
+  "sourceSHA": "d1261b090d116b1353f0f68ed0fc5a0ea35e95e8",
+  "builtSourceSHA": "baa730346df0c1cebd6c6e79ac19c0bdd50115c5",
+  "checkoutHead": "d1261b090d116b1353f0f68ed0fc5a0ea35e95e8",
+  "hasUncommittedChanges": true,
+  "productionBuildId": "_mPJ_pdF3d4xL14NjIvDI",
+  "project": "iphone-webkit",
+  "scenario": "conflict",
+  "test": "a tampered container or a conflicting sense identity cannot overwrite existing profile bytes",
+  "browserEngine": "webkit",
+  "browserVersion": "27.2",
+  "screenshots": "Actual viewport captures; CSS animations disabled for a stable still image.",
+  "content": "Fresh isolated browser profiles. Original repository learning, writing and media fixtures; real export/preview/restore UI. The quota-error state is deliberately induced, not a provider outage or production incident.",
+  "limitations": [
+    "Local portable backup is not hosted account persistence, cloud backup or automatic two-device synchronization.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone PWA verification.",
+    "Captures do not prove full accessibility, screen reader/zoom/contrast/performance compliance or final owner visual approval.",
+    "No live AI, dictionary, speech, hosted Auth or external upload is used by these capture journeys."
+  ],
+  "captures": [
+    {
+      "name": "conflicting-preview",
+      "filename": "iphone-webkit-conflicting-preview.png",
+      "detail": "A same-ID definition with different original content blocks restoration. Existing local records, writing branches and recording bytes remain unchanged.",
+      "capturedAt": "2026-10-27T22:40:44.090Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "scrollY": 3165,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": true
+    }
+  ],
+  "pageErrors": [
+    {
+      "state": "opening",
+      "category": "Cannot load blob"
+    }
+  ]
+}

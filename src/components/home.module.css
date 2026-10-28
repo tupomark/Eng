@@ -1,0 +1,43 @@
+/* Keep the first useful action above mobile browser chrome and navigation. */
+@media (max-width: 700px) {
+  .heading:global(.home-heading) {
+    margin-bottom: 20px;
+  }
+  .heading:global(.home-heading) h1 {
+    font-size: 30px;
+    max-width: none;
+  }
+  .heading:global(.home-heading) :global(.eyebrow) {
+    margin-bottom: 10px;
+  }
+  .heading:global(.home-heading) :global(.intro-copy) {
+    margin-top: 10px;
+    line-height: 1.5;
+    max-width: none;
+  }
+  .overview:global(.balanced-home) :global(.continue-card) {
+    padding: 18px;
+  }
+  .overview:global(.balanced-home) :global(.reading-preview) {
+    margin: 18px 0 16px;
+    grid-template-columns: 72px 1fr;
+    gap: 16px;
+  }
+  .overview:global(.balanced-home) :global(.book-cover) {
+    width: 72px;
+    height: 108px;
+  }
+  .overview:global(.balanced-home) :global(.reading-preview h2) {
+    font-size: 25px;
+    margin: 7px 0 10px;
+  }
+  .overview:global(.balanced-home) :global(.reading-meta) {
+    margin-top: 10px;
+  }
+  .overview:global(.balanced-home) :global(.reading-progress) {
+    margin-top: 0;
+  }
+  .overview:global(.balanced-home) :global(.continue-card > .button) {
+    margin-top: 16px;
+  }
+}

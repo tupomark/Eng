@@ -1,0 +1,57 @@
+{
+  "result": "captured",
+  "generatedAt": "2026-10-28T15:55:40.664Z",
+  "sourceSHA": "7f88866a8a1f27dfc4e55e0da67e4bddf1ff0dec",
+  "builtSourceSHA": "cbe5560382d4eb76b708f788500997c277f8fb98",
+  "checkoutHead": "7f88866a8a1f27dfc4e55e0da67e4bddf1ff0dec",
+  "hasUncommittedChanges": true,
+  "productionBuildId": "SA5gsAIM6Piedwqipqi8p",
+  "project": "desktop-chromium",
+  "scenario": "inventory",
+  "test": "a whole local profile restores stable histories, draft branches and playable media into a fresh profile without renewing Tutor consent",
+  "browserEngine": "chromium",
+  "browserVersion": "154.0.8037.57",
+  "screenshots": "Actual viewport captures; CSS animations disabled for a stable still image.",
+  "content": "Fresh isolated browser profiles. Original repository learning, writing and media fixtures; real export/preview/restore UI. The quota-error state is deliberately induced, not a provider outage or production incident.",
+  "limitations": [
+    "Local portable backup is not hosted account persistence, cloud backup or automatic two-device synchronization.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone PWA verification.",
+    "Captures do not prove full accessibility, screen reader/zoom/contrast/performance compliance or final owner visual approval.",
+    "No live AI, dictionary, speech, hosted Auth or external upload is used by these capture journeys."
+  ],
+  "captures": [
+    {
+      "name": "empty-inventory",
+      "filename": "desktop-chromium-empty-inventory.png",
+      "detail": "First-use profile backup inventory before any fixture is installed. No learning progress is invented.",
+      "capturedAt": "2026-10-28T15:55:42.256Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 1440,
+        "height": 1050
+      },
+      "deviceScaleFactor": 1,
+      "scrollY": 0,
+      "documentWidth": 1440,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": false
+    },
+    {
+      "name": "populated-inventory",
+      "filename": "desktop-chromium-populated-inventory.png",
+      "detail": "The actual inventory of original saved meanings, challenged observations, FSRS tasks, chapters, writing branches and a local recording.",
+      "capturedAt": "2026-10-28T15:55:44.522Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 1440,
+        "height": 1050
+      },
+      "deviceScaleFactor": 1,
+      "scrollY": 242,
+      "documentWidth": 1440,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": false
+    }
+  ],
+  "pageErrors": []
+}

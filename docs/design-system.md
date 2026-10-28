@@ -1,5 +1,11 @@
 # Дизайн-система LEXIS
 
+## Собственные определения — 25 октября
+
+`/library/meanings` и contextual Inbox используют существующие semantic tokens, спокойные reading surfaces, native controls и focus styles. Обязательны слово/POS и определение; перевод/пример/IPA/forms раскрываются отдельно. Источник отличает собственную заметку от editorial content. Палитра, material levels и основная навигация не менялись.
+
+[12 реальных кадров](screenshots/2026-10-25-user-meanings/capture-manifest.json) из production source `754323b`: шесть состояний в Chromium desktop и WebKit iPhone13 preset, оба result `captured`, zero pageerror/overflow. Неуспешный manifest сохранён отдельно; prefetch pageerror устранён у контекстных practice links. Это не hardware Safari, SR/200% zoom, измеренный contrast, тепловой бюджет или финальное визуальное одобрение.
+
 ## Источник и статус
 
 Направление задают [актуальные решения](DECISIONS_AND_SOURCE_OF_TRUTH.md), [VISUAL_DESIGN](source/VISUAL_DESIGN.md) и [SCREEN_BLUEPRINTS](source/SCREEN_BLUEPRINTS.md). 22 октября 2026 года просмотрены все пять изображений LIGHT-пакета и `reference_overview.jpg`; [инвентаризация](HANDOFF_AUDIT_2026-10-22.md) содержит имена и происхождение.
@@ -52,9 +58,9 @@
 
 ## Иерархия экранов
 
-Home: короткое приветствие → карточка чтения → небольшой Living Core → повторение. Voice расположен тихим отдельным переходом. Числа показывают добавленные значения и самооценённые повторения; нет выдуманного retention или streak.
+Home: короткое приветствие → карточка чтения → небольшой Living Core → повторение. Voice расположен тихим отдельным переходом. Числа различают saved meanings, legacy self-reports и FSRS review objectives; нет выдуманного retention или streak. Home продолжает собственный импортированный текст, если он есть.
 
-Reader: текст и структурная часть чтения, настройки по запросу. Текущая позиция относится к одной из трёх частей образца; это не обещание восстановления произвольного paragraph/EPUB-location. Dictionary открывается поверх текущего контекста: mobile sheet или desktop context panel. Точное позиционирование у выбранного слова не реализовано и не заявляется. Примеры и сочетания раскрываются отдельно.
+Reader: текст и структурная часть чтения, настройки по запросу. Sample сохраняет одну из трёх частей; собственный TXT/EPUB Reader использует document/version/chapter/paragraph/character anchors, bookmarks и главы. Это local model, не проверенный cross-device EPUB CFI. Dictionary открывается поверх текущего контекста: mobile sheet или desktop context panel. Точное позиционирование у выбранного слова не реализовано и не заявляется. Примеры и сочетания раскрываются отдельно; новые Full Entry/Deep Dive сохраняют спокойный фон и возвращают в исходный контекст.
 
 Core: компактный объект и объяснимая история. В UI используются качественные tentative-сигналы; внутренняя эвристика не выдаётся за вероятность владения языком. Неизмеренные навыки остаются без данных.
 
@@ -67,3 +73,15 @@ Core: компактный объект и объяснимая история. 
 ## Проверка
 
 Проверять Home, Reader, Dictionary, Review, Core и Voice на 390 px и широком экране, с длинными переводами, клавиатурой, увеличенным текстом и Reduced Motion. Скриншоты должны происходить из приложения. Проверка на физическом iPhone Safari, производительность и финальное визуальное подтверждение владельцем остаются отдельными задачами. Фактические результаты этой итерации фиксируются в [PROGRESS](PROGRESS.md).
+
+## Новые workspaces v2 — 24 октября
+
+Dictionary Full/Deep, import/Inbox, собственный Reader, practice, Writing/Grammar, Listening, Observatory/Network/Goals используют текущие semantic tokens и feature CSS modules. Плотный текст остаётся на спокойной почти непрозрачной поверхности; typed source/assistance/errors раскрываются по месту. Списки/формы используют native labelled controls и общую Modal, без новой конкурирующей drawer-системы. Reduced Motion учитывает system preference и отдельную local настройку.
+
+Эта запись описывает структуру кода, а не завершённый visual/a11y аудит. Новые screenshots из production build, actual composited contrast, 200% zoom/SR, длинные RU/IPA/диалоги, keyboard/safe-area и полный набор empty/error/offline states ещё входят в текущий интеграционный gate. Исторические screenshots22.10 не выдаются за доказательство новых экранов. Physical iPhone/нагрев/audio interruption и финальное визуальное одобрение остаются отдельными gates.
+
+## Profile recovery states — 28 октября
+
+Settings backup использует те же glass-panel, surface-reading, text/line/accent tokens, native labelled checkbox/select/file input и общие buttons. Для выбора разделов — fieldset/legend и label target≥44px, без новой dialog/drawer системы. Состояния preview/conflict, busy/cancel, partial/resume, complete/reopen имеют текстовое объяснение; результат не передаётся одним цветом. При marker export/restore формы убраны до full reopen, чтобы не показывать прежние counts. Новый WebGL/Motion SDK/animated blur не вводился.
+
+[12 actual captures](screenshots/2026-10-28-profile-backup/README.md) из `ccbc688` открыты, текущая мобильная типографика и primary actions просмотрены. Это проверка данного workspace с original fixtures; общая AA/contrast/200%/SR, full locale, hardware performance и финальное owner approval остаются отдельными gates.

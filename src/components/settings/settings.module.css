@@ -1,0 +1,134 @@
+.stack {
+  display: grid;
+  gap: 24px;
+  margin-block: 28px;
+}
+.panel {
+  padding: clamp(22px, 4vw, 36px);
+  display: grid;
+  gap: 20px;
+}
+.panel h2 {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.panel p {
+  color: var(--text-secondary);
+  line-height: 1.8;
+  max-width: 70ch;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.field {
+  display: grid;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.select,
+.input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--surface-reading);
+  color: var(--text-primary);
+  border-radius: 14px;
+  padding: 13px 15px;
+  font: inherit;
+  font-size: 16px;
+}
+.select:focus-visible,
+.input:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 3px;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.note {
+  font-size: 13px;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+  accent-color: var(--accent-warm);
+  flex-shrink: 0;
+}
+.list {
+  display: grid;
+  gap: 12px;
+  padding-left: 20px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+.danger {
+  border-color: var(--line-strong, var(--line));
+}
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin: 0;
+}
+.stats div {
+  display: grid;
+  gap: 8px;
+}
+.stats dt {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.stats dd {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+.divider {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+.selection {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.selection legend {
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+.selection > label {
+  min-height: 44px;
+}
+.description {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}

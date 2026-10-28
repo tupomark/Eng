@@ -55,6 +55,15 @@ export function Voice() {
         <p className="eyebrow">A LITTLE ROOM TO SPEAK</p>
         <h1>Voice Assistant</h1>
         <p className="voice-description">A softer space to find the words.</p>
+        <p>
+          <Link className="text-link" href="/tutor/chat">
+            Open text Tutor
+          </Link>{" "}
+          ·{" "}
+          <Link className="text-link" href="/listening">
+            Listening & local shadowing
+          </Link>
+        </p>
         <div className="voice-stage">
           <Orb variant="voice" state={preview.state} />
         </div>

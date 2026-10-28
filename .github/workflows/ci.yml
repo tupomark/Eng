@@ -2,6 +2,9 @@ name: LEXIS checks
 on:
   push:
   pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -18,6 +21,7 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
@@ -25,7 +29,8 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
-        if: failure()
+        # Retain a flaky first attempt's trace even when its retry passes.
+        if: ${{ !cancelled() }}
         with:
           name: playwright-report
           path: |
