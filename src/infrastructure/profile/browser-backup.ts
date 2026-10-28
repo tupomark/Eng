@@ -24,6 +24,7 @@ import {
 } from "@/infrastructure/writing/repository";
 import {
   readMediaBackupSnapshot,
+  readMediaBackupInventory,
   readMediaBackupAsset,
   readMediaBackupSession,
   restoreMediaBackupAsset,
@@ -154,7 +155,9 @@ export async function inspectBrowserProfile(
     });
   }
   try {
-    const media = await readMediaBackupSnapshot({ signal: options.signal });
+    // Counts require validated metadata, not a background read/hash of every recording.
+    // Full byte verification belongs to the explicit export/restore operation.
+    const media = await readMediaBackupInventory({ signal: options.signal });
     sections.push({
       id: "media-metadata",
       status: media.assets.length || media.sessions.length ? "valid" : "absent",

@@ -543,13 +543,13 @@ function openMediaBackupDatabase(): Promise<IDBDatabase | null> {
     };
   });
 }
-interface MediaBackupRows {
+export interface MediaBackupInventory {
   assets: LocalMediaMetadata[];
   sessions: ListeningSession[];
 }
 async function readMediaBackupRows(
   options?: MediaBackupReadOptions,
-): Promise<MediaBackupRows> {
+): Promise<MediaBackupInventory> {
   checkBackupRead(options);
   const database = await openMediaBackupDatabase();
   try {
@@ -564,7 +564,7 @@ async function readMediaBackupRows(
       ["assets", "sessions"],
       "readonly",
     );
-    const rows: MediaBackupRows = { assets: [], sessions: [] };
+    const rows: MediaBackupInventory = { assets: [], sessions: [] };
     let cause: unknown;
     const assets = transaction.objectStore("assets").openCursor();
     assets.onsuccess = () => {
@@ -647,6 +647,18 @@ async function readMediaBackupRows(
     };
   });
 }
+
+/**
+ * Counts and recorded metadata for the backup screen, without decoding or hashing
+ * media bytes. This does not claim that a recording's content passed integrity
+ * verification; export and restore preparation still perform the full snapshot.
+ */
+export function readMediaBackupInventory(
+  options?: MediaBackupReadOptions,
+): Promise<MediaBackupInventory> {
+  return readMediaBackupRows(options);
+}
+
 /** Reads one asset only. The caller may require the digest from its earlier inventory. */
 export async function readMediaBackupAsset(
   sourceId: string,

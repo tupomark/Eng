@@ -49,6 +49,7 @@ const mocks = vi.hoisted(() => ({
   writingRead: vi.fn(),
   writingApply: vi.fn(),
   mediaSnapshot: vi.fn(),
+  mediaInventory: vi.fn(),
   mediaAsset: vi.fn(),
   mediaSession: vi.fn(),
   mediaApplyAsset: vi.fn(),
@@ -67,6 +68,7 @@ vi.mock("@/infrastructure/listening/media-repository", async (original) => ({
     typeof import("@/infrastructure/listening/media-repository")
   >()),
   readMediaBackupSnapshot: mocks.mediaSnapshot,
+  readMediaBackupInventory: mocks.mediaInventory,
   readMediaBackupAsset: mocks.mediaAsset,
   readMediaBackupSession: mocks.mediaSession,
   restoreMediaBackupAsset: mocks.mediaApplyAsset,
@@ -304,6 +306,13 @@ beforeEach(() => {
       return { raw: writingRaw, signature: writingRaw };
     },
   );
+  mocks.mediaInventory.mockImplementation(async () => ({
+    assets: [...assets.values()].map(({ blob, ...metadata }) => {
+      void blob;
+      return metadata;
+    }),
+    sessions: [...sessions.values()],
+  }));
   mocks.mediaSnapshot.mockImplementation(async () => {
     const metadata: MediaBackupAssetMetadata[] = [];
     for (const { blob, ...item } of assets.values())
@@ -818,6 +827,9 @@ describe("browser profile export and recovery adapter", () => {
   });
 
   it("reports inaccessible media separately and allows a useful export of other sections", async () => {
+    mocks.mediaInventory.mockRejectedValue(
+      new Error("A source recording contains unsupported original fields."),
+    );
     mocks.mediaSnapshot.mockRejectedValue(
       new Error("A source recording contains unsupported original fields."),
     );
@@ -832,6 +844,29 @@ describe("browser profile export and recovery adapter", () => {
     await expect(
       exportBrowserProfile({ sections: ["media-metadata"] }),
     ).rejects.toThrow("unsupported original fields");
+    expect(store.writes).toEqual([]);
+  });
+  it("inspects media counts without reading or hashing recording bytes in the background", async () => {
+    const fixture = await mediaFixture();
+    const { sha256: _digest, ...metadata } = fixture.metadata;
+    void _digest;
+    const blob = new Blob([fixture.bytes]);
+    const read = vi
+      .spyOn(blob, "arrayBuffer")
+      .mockRejectedValue(new Error("Inventory must not read bytes."));
+    assets.set(metadata.id, { ...metadata, blob });
+    sessions.set(fixture.session.sourceId, fixture.session);
+    const inventory = await inspectBrowserProfile();
+    expect(
+      inventory.sections.find((item) => item.id === "media-metadata"),
+    ).toMatchObject({
+      status: "valid",
+      counts: { recordings: 1, sessions: 1 },
+    });
+    expect(mocks.mediaInventory).toHaveBeenCalledOnce();
+    expect(mocks.mediaSnapshot).not.toHaveBeenCalled();
+    expect(mocks.mediaAsset).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
     expect(store.writes).toEqual([]);
   });
 });

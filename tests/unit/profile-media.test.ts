@@ -18,6 +18,7 @@ import {
 } from "@/infrastructure/profile/media-backup";
 import {
   readMediaBackupAsset,
+  readMediaBackupInventory,
   readMediaBackupSession,
   readMediaBackupSnapshot,
   restoreMediaBackupAsset,
@@ -67,9 +68,160 @@ function storage(values: Record<string, string>) {
   });
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+/** Cursor contract fixture; actual IndexedDB persistence is covered by browser journeys. */
+function inventoryDatabase(
+  assets: Record<string, unknown>[],
+  sessions: Record<string, unknown>[],
+) {
+  const close = vi.fn();
+  const writes = vi.fn();
+  const database = {
+    version: 1,
+    close,
+    onversionchange: null,
+    objectStoreNames: {
+      contains: (name: string) => ["assets", "sessions"].includes(name),
+    },
+    transaction: vi.fn((_names: string[], mode: string) => {
+      if (mode !== "readonly") writes();
+      let aborted = false;
+      let remaining = 2;
+      const transaction = {
+        oncomplete: null as (() => void) | null,
+        onabort: null as (() => void) | null,
+        onerror: null as (() => void) | null,
+        abort: () => {
+          aborted = true;
+          queueMicrotask(() => transaction.onabort?.());
+        },
+        objectStore: (name: string) => ({
+          openCursor: () => {
+            const rows = name === "assets" ? assets : sessions;
+            let index = 0;
+            const request = {
+              result: null as null | {
+                value: Record<string, unknown>;
+                primaryKey: unknown;
+                continue: () => void;
+              },
+              onsuccess: null as (() => void) | null,
+            };
+            const next = () =>
+              queueMicrotask(() => {
+                if (aborted) return;
+                const value = rows[index++];
+                request.result = value
+                  ? { value, primaryKey: value.id, continue: next }
+                  : null;
+                request.onsuccess?.();
+                if (!value && --remaining === 0 && !aborted)
+                  queueMicrotask(() => transaction.oncomplete?.());
+              });
+            next();
+            return request;
+          },
+        }),
+      };
+      return transaction;
+    }),
+  };
+  const open = vi.fn(() => {
+    const request = {
+      result: database,
+      onsuccess: null as (() => void) | null,
+    };
+    queueMicrotask(() => request.onsuccess?.());
+    return request;
+  });
+  vi.stubGlobal("indexedDB", { open });
+  return { open, writes, database, close };
+}
 
 describe("local media profile backup", () => {
+  it("reads backup-screen metadata without creating, reading or hashing media blobs", async () => {
+    const bytes = new TextEncoder().encode("RIFF1234WAVE");
+    const blob = new Blob([bytes], { type: "audio/wav" });
+    const readBytes = vi
+      .spyOn(blob, "arrayBuffer")
+      .mockRejectedValue(new Error("must not read media bytes for inventory"));
+    const digestBytes = vi.spyOn(crypto.subtle, "digest");
+    const createReader = vi.fn(() => {
+      throw new Error("must not create a byte reader for inventory");
+    });
+    vi.stubGlobal("FileReader", createReader);
+    const { sha256: _hash, ...metadata } = asset();
+    void _hash;
+    const session = {
+      ...initialListeningSession(metadata.id),
+      transcript: "Keep this recorded transcript.",
+      revision: 4,
+    };
+    const fixture = inventoryDatabase([{ ...metadata, blob }], [session]);
+
+    const inventory = await readMediaBackupInventory();
+
+    expect(inventory).toEqual({ assets: [metadata], sessions: [session] });
+    expect(inventory.assets[0]).not.toHaveProperty("blob");
+    expect(inventory.assets[0]).not.toHaveProperty("sha256");
+    expect(readBytes).not.toHaveBeenCalled();
+    expect(digestBytes).not.toHaveBeenCalled();
+    expect(createReader).not.toHaveBeenCalled();
+    expect(fixture.database.transaction).toHaveBeenCalledWith(
+      ["assets", "sessions"],
+      "readonly",
+    );
+    expect(fixture.writes).not.toHaveBeenCalled();
+    expect(fixture.close).toHaveBeenCalledOnce();
+  });
+
+  it("validates inventory rows and preserves unsupported original records without byte reads or writes", async () => {
+    const { sha256: _hash, ...metadata } = asset();
+    void _hash;
+    const original = {
+      ...metadata,
+      encoding: "array-buffer-v1",
+      data: new ArrayBuffer(12),
+      unsupported: "keep this field",
+    };
+    const before = structuredClone(original);
+    const fixture = inventoryDatabase([original], []);
+
+    await expect(readMediaBackupInventory()).rejects.toThrow(
+      "unsupported fields",
+    );
+
+    expect(original).toEqual(before);
+    expect(fixture.writes).not.toHaveBeenCalled();
+    expect(fixture.close).toHaveBeenCalledOnce();
+  });
+
+  it("leaves an absent media database absent when preparing the backup-screen inventory", async () => {
+    const abort = vi.fn(() => queueMicrotask(() => request.onerror?.()));
+    const request = {
+      transaction: { abort },
+      onupgradeneeded: null as (() => void) | null,
+      onerror: null as (() => void) | null,
+    };
+    const open = vi.fn(() => {
+      queueMicrotask(() => request.onupgradeneeded?.());
+      return request;
+    });
+    vi.stubGlobal("indexedDB", { open });
+
+    await expect(readMediaBackupInventory()).resolves.toEqual({
+      assets: [],
+      sessions: [],
+    });
+
+    expect(open).toHaveBeenCalledOnce();
+    expect(abort).toHaveBeenCalledOnce();
+  });
+
   it("uses deterministic metadata and session fingerprints without exposing their text in receipts", async () => {
     const first = asset("z-source");
     const second = asset("a-source");
@@ -273,6 +425,9 @@ describe("local media profile backup", () => {
     vi.stubGlobal("indexedDB", indexedDB);
     const controller = new AbortController();
     controller.abort();
+    await expect(
+      readMediaBackupInventory({ signal: controller.signal }),
+    ).rejects.toThrow("cancelled");
     await expect(
       readMediaBackupSnapshot({ signal: controller.signal }),
     ).rejects.toThrow("cancelled");

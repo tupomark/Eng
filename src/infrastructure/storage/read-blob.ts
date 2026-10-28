@@ -16,9 +16,9 @@ function check(signal?: AbortSignal): void {
 }
 
 /**
- * FileReader permits native cancellation before a document leaves. In particular,
- * WebKit must not keep Blob.arrayBuffer()'s temporary URL read alive across navigation.
- * The non-browser fallback can only check cancellation before and after its read.
+ * FileReader permits native cancellation while the document is active. Signal/pagehide
+ * cleanup is best effort during browser teardown; inventory must not start byte reads
+ * in the background. The non-browser fallback checks before and after its read only.
  */
 export async function readLocalBlobBytes(
   blob: Blob,
