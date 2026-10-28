@@ -14,7 +14,10 @@ test("opt-in public shell reopens a private local text and dictionary with the n
   await page
     .getByRole("button", { name: "Choose a file", exact: true })
     .setInputFiles(resolve("tests/fixtures/materials/original-reading.txt"));
-  await page.getByLabel("Title / source name").fill("My private offline coast");
+  await page
+    .getByRole("main")
+    .getByLabel("Title / source name")
+    .fill("My private offline coast");
   await page
     .getByRole("button", { name: "Preview import", exact: true })
     .click();

@@ -9,7 +9,9 @@ test("account clearly awaits configuration while local learning remains availabl
     page.getByRole("heading", { name: "Account", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Account sign-in awaits configuration.", { exact: false }),
+    page
+      .getByRole("main")
+      .getByText("Account sign-in awaits configuration.", { exact: false }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Sign in", exact: true }),
