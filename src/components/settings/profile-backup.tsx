@@ -351,256 +351,264 @@ export function ProfileBackup() {
             )}
           </section>
         )}
-        <section
-          className={`glass-panel ${styles.panel}`}
-          aria-label="Export local profile"
-        >
-          <h2>Keep a private copy.</h2>
-          <p>
-            The file is not encrypted. It can contain books, answers,
-            transcripts and drafts. Store it privately. Account credentials,
-            server data, temporary context permissions and offline caches are
-            excluded.
-          </p>
-          <fieldset className={styles.selection} disabled={busy}>
-            <legend>Sections to export</legend>
-            {inventory?.sections.map((item) => (
-              <label className={styles.check} key={item.id}>
-                <input
-                  type="checkbox"
-                  data-testid={`profile-export-${item.id}`}
-                  checked={exportIds.includes(item.id)}
-                  disabled={item.status === "unavailable"}
-                  onChange={(event) =>
-                    setExportIds(
-                      toggle(exportIds, item.id, event.target.checked),
-                    )
-                  }
-                />
-                <span>
-                  {names[item.id]}
-                  <small className={styles.description}>
-                    {item.status === "opaque"
-                      ? "Unvalidated original — export for recovery only"
-                      : item.status === "unavailable"
-                        ? "Unavailable — not included"
-                        : describe(item.counts)}
-                    {item.error && ` · ${item.error}`}
-                  </small>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          <button
-            className="button primary"
-            disabled={busy || !inventory || !exportIds.length}
-            onClick={() =>
-              void perform(async (signal) => {
-                setStatus("Preparing your selected copy…");
-                const result = await exportBrowserProfile(
-                  { sections: exportIds },
-                  { signal, onProgress: progress },
-                );
-                download(result);
-                setStatus(
-                  "Your selected copy is ready to save. Keep the .lexis file privately and verify a restore before relying on it.",
-                );
-              })
-            }
-          >
-            Export selected profile
-          </button>
-          <p className={styles.note}>
-            Books contain the imported readable chapters, not the original EPUB
-            archive. Media includes locally stored user-provided files; a past
-            import is not proof of content rights. Browser storage may be
-            evicted, so keep copies elsewhere.
-          </p>
-        </section>
-        <section
-          className={`glass-panel ${styles.panel}`}
-          aria-label="Restore local profile"
-        >
-          <h2>Review before bringing it back.</h2>
-          <p>
-            A merge keeps existing history and original IDs. Conflicting
-            identities are blocked. Writing branches remain available for you to
-            compare. Missing definitions and sources remain unavailable rather
-            than being linked to a different meaning.
-          </p>
-          <label className={styles.field}>
-            Backup file
-            <input
-              className={styles.input}
-              type="file"
-              accept=".lexis,application/vnd.lexis.profile"
-              disabled={busy || !!marker}
-              onChange={(event) => {
-                const chosen = event.target.files?.[0];
-                event.currentTarget.value = "";
-                if (!chosen) return;
-                setFile(null);
-                setPreview(null);
-                setConfirmed(false);
-                void perform(async (signal) => {
-                  setStatus("Checking file integrity…");
-                  const opened = await openBrowserProfileBackup(chosen, {
-                    signal,
-                    onProgress: progress,
-                  });
-                  setFile(opened);
-                  setRestoreIds(
-                    opened.manifest.parts.flatMap((part) =>
-                      part.kind === "json" ? [part.section] : [],
-                    ),
-                  );
-                  setStatus(
-                    "File verified. Choose sections and preview their merge.",
-                  );
-                });
-              }}
-            />
-          </label>
-          <p className={styles.note}>
-            Supported local backup v1 · at most{" "}
-            {PROFILE_BACKUP_LIMITS.maxFileBytes / 1024 / 1024} MiB per file, 25
-            MiB per recording, 10 recordings. Older per-module JSON exports
-            remain available in their original workspaces.
-          </p>
-          {file && (
-            <>
+        {!marker && (
+          <>
+            <section
+              className={`glass-panel ${styles.panel}`}
+              aria-label="Export local profile"
+            >
+              <h2>Keep a private copy.</h2>
               <p>
-                Created {file.manifest.createdAt.slice(0, 10)} ·{" "}
-                {restoreSections.length} sections. File checksums detect damage;
-                they do not establish who created a file.
+                The file is not encrypted. It can contain books, answers,
+                transcripts and drafts. Store it privately. Account credentials,
+                server data, temporary context permissions and offline caches
+                are excluded.
               </p>
-              <fieldset
-                className={styles.selection}
-                disabled={busy || !!marker}
-              >
-                <legend>Sections to restore</legend>
-                {restoreSections.map((id) => (
-                  <label className={styles.check} key={id}>
+              <fieldset className={styles.selection} disabled={busy}>
+                <legend>Sections to export</legend>
+                {inventory?.sections.map((item) => (
+                  <label className={styles.check} key={item.id}>
                     <input
                       type="checkbox"
-                      data-testid={`profile-restore-${id}`}
-                      checked={restoreIds.includes(id)}
-                      onChange={(event) => {
-                        setRestoreIds(
-                          toggle(restoreIds, id, event.target.checked),
-                        );
-                        setPreview(null);
-                        setConfirmed(false);
-                      }}
+                      data-testid={`profile-export-${item.id}`}
+                      checked={exportIds.includes(item.id)}
+                      disabled={item.status === "unavailable"}
+                      onChange={(event) =>
+                        setExportIds(
+                          toggle(exportIds, item.id, event.target.checked),
+                        )
+                      }
                     />
-                    {names[id]}
+                    <span>
+                      {names[item.id]}
+                      <small className={styles.description}>
+                        {item.status === "opaque"
+                          ? "Unvalidated original — export for recovery only"
+                          : item.status === "unavailable"
+                            ? "Unavailable — not included"
+                            : describe(item.counts)}
+                        {item.error && ` · ${item.error}`}
+                      </small>
+                    </span>
                   </label>
                 ))}
               </fieldset>
-              <label className={styles.field}>
-                Settings during restore
-                <select
-                  className={styles.select}
-                  value={settings}
-                  disabled={busy || !!marker}
-                  onChange={(event) => {
-                    setSettings(event.target.value as typeof settings);
-                    setPreview(null);
-                    setConfirmed(false);
-                  }}
-                >
-                  <option value="keep-current">
-                    Keep this device’s settings
-                  </option>
-                  <option value="incoming">
-                    Use settings from this backup
-                  </option>
-                </select>
-              </label>
-              <button
-                className="button secondary"
-                disabled={busy || !!marker || !restoreIds.length}
-                onClick={() =>
-                  void perform(async (signal) => {
-                    const result = await previewBrowserProfileRestore(
-                      file,
-                      { sections: restoreIds, settings },
-                      { signal },
-                    );
-                    setPreview(result);
-                    setConfirmed(false);
-                    setStatus(
-                      result.rows.some((row) => row.conflict)
-                        ? "Resolve conflicts or exclude those sections, then preview again."
-                        : "Review the selected merge before confirming.",
-                    );
-                  })
-                }
-              >
-                Preview selected sections
-              </button>
-            </>
-          )}
-          {preview && (
-            <div className={styles.divider} data-testid="profile-preview">
-              <h3>Your selected merge</h3>
-              <ul className={styles.list}>
-                {preview.rows.map((row) => (
-                  <li key={row.id}>
-                    <strong>{names[row.id]}</strong> ·{" "}
-                    {row.conflict
-                      ? "Blocked"
-                      : row.changed
-                        ? "Add / merge"
-                        : "Keep unchanged"}
-                    <p>{row.conflict ?? describe(row.counts)}</p>
-                    {row.warnings.map((warning) => (
-                      <p key={warning}>{warning}</p>
-                    ))}
-                  </li>
-                ))}
-              </ul>
-              {preview.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
-              ))}
-              <p>
-                Save or copy text in other LEXIS tabs first. Pending Tutor
-                requests will be cancelled; restoring conversations does not
-                renew permission to send private context. This operation never
-                deletes missing items or creates new learning evidence.
-              </p>
-              <label className={styles.check}>
-                <input
-                  type="checkbox"
-                  checked={confirmed}
-                  disabled={busy || !!marker}
-                  onChange={(event) => setConfirmed(event.target.checked)}
-                />
-                I have saved my work and reviewed this merge.
-              </label>
               <button
                 className="button primary"
-                disabled={busy || !!marker || !confirmed || !preview.marker}
+                disabled={busy || !inventory || !exportIds.length}
                 onClick={() =>
                   void perform(async (signal) => {
-                    if (!preview.marker) return;
-                    const result =
-                      await browserProfileRestoreCoordinator().start(
-                        { marker: preview.marker, payloads: preview.payloads },
-                        { signal, onProgress: progress },
-                      );
-                    setMarker(result);
+                    setStatus("Preparing your selected copy…");
+                    const result = await exportBrowserProfile(
+                      { sections: exportIds },
+                      { signal, onProgress: progress },
+                    );
+                    download(result);
                     setStatus(
-                      "All selected data verified. Open the restored profile to continue.",
+                      "Your selected copy is ready to save. Keep the .lexis file privately and verify a restore before relying on it.",
                     );
                   })
                 }
               >
-                Restore reviewed sections
+                Export selected profile
               </button>
-            </div>
-          )}
-        </section>
+              <p className={styles.note}>
+                Books contain the imported readable chapters, not the original
+                EPUB archive. Media includes locally stored user-provided files;
+                a past import is not proof of content rights. Browser storage
+                may be evicted, so keep copies elsewhere.
+              </p>
+            </section>
+            <section
+              className={`glass-panel ${styles.panel}`}
+              aria-label="Restore local profile"
+            >
+              <h2>Review before bringing it back.</h2>
+              <p>
+                A merge keeps existing history and original IDs. Conflicting
+                identities are blocked. Writing branches remain available for
+                you to compare. Missing definitions and sources remain
+                unavailable rather than being linked to a different meaning.
+              </p>
+              <label className={styles.field}>
+                Backup file
+                <input
+                  className={styles.input}
+                  type="file"
+                  accept=".lexis,application/vnd.lexis.profile"
+                  disabled={busy || !!marker}
+                  onChange={(event) => {
+                    const chosen = event.target.files?.[0];
+                    event.currentTarget.value = "";
+                    if (!chosen) return;
+                    setFile(null);
+                    setPreview(null);
+                    setConfirmed(false);
+                    void perform(async (signal) => {
+                      setStatus("Checking file integrity…");
+                      const opened = await openBrowserProfileBackup(chosen, {
+                        signal,
+                        onProgress: progress,
+                      });
+                      setFile(opened);
+                      setRestoreIds(
+                        opened.manifest.parts.flatMap((part) =>
+                          part.kind === "json" ? [part.section] : [],
+                        ),
+                      );
+                      setStatus(
+                        "File verified. Choose sections and preview their merge.",
+                      );
+                    });
+                  }}
+                />
+              </label>
+              <p className={styles.note}>
+                Supported local backup v1 · at most{" "}
+                {PROFILE_BACKUP_LIMITS.maxFileBytes / 1024 / 1024} MiB per file,
+                25 MiB per recording, 10 recordings. Older per-module JSON
+                exports remain available in their original workspaces.
+              </p>
+              {file && (
+                <>
+                  <p>
+                    Created {file.manifest.createdAt.slice(0, 10)} ·{" "}
+                    {restoreSections.length} sections. File checksums detect
+                    damage; they do not establish who created a file.
+                  </p>
+                  <fieldset
+                    className={styles.selection}
+                    disabled={busy || !!marker}
+                  >
+                    <legend>Sections to restore</legend>
+                    {restoreSections.map((id) => (
+                      <label className={styles.check} key={id}>
+                        <input
+                          type="checkbox"
+                          data-testid={`profile-restore-${id}`}
+                          checked={restoreIds.includes(id)}
+                          onChange={(event) => {
+                            setRestoreIds(
+                              toggle(restoreIds, id, event.target.checked),
+                            );
+                            setPreview(null);
+                            setConfirmed(false);
+                          }}
+                        />
+                        {names[id]}
+                      </label>
+                    ))}
+                  </fieldset>
+                  <label className={styles.field}>
+                    Settings during restore
+                    <select
+                      className={styles.select}
+                      value={settings}
+                      disabled={busy || !!marker}
+                      onChange={(event) => {
+                        setSettings(event.target.value as typeof settings);
+                        setPreview(null);
+                        setConfirmed(false);
+                      }}
+                    >
+                      <option value="keep-current">
+                        Keep this device’s settings
+                      </option>
+                      <option value="incoming">
+                        Use settings from this backup
+                      </option>
+                    </select>
+                  </label>
+                  <button
+                    className="button secondary"
+                    disabled={busy || !!marker || !restoreIds.length}
+                    onClick={() =>
+                      void perform(async (signal) => {
+                        const result = await previewBrowserProfileRestore(
+                          file,
+                          { sections: restoreIds, settings },
+                          { signal },
+                        );
+                        setPreview(result);
+                        setConfirmed(false);
+                        setStatus(
+                          result.rows.some((row) => row.conflict)
+                            ? "Resolve conflicts or exclude those sections, then preview again."
+                            : "Review the selected merge before confirming.",
+                        );
+                      })
+                    }
+                  >
+                    Preview selected sections
+                  </button>
+                </>
+              )}
+              {preview && (
+                <div className={styles.divider} data-testid="profile-preview">
+                  <h3>Your selected merge</h3>
+                  <ul className={styles.list}>
+                    {preview.rows.map((row) => (
+                      <li key={row.id}>
+                        <strong>{names[row.id]}</strong> ·{" "}
+                        {row.conflict
+                          ? "Blocked"
+                          : row.changed
+                            ? "Add / merge"
+                            : "Keep unchanged"}
+                        <p>{row.conflict ?? describe(row.counts)}</p>
+                        {row.warnings.map((warning) => (
+                          <p key={warning}>{warning}</p>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
+                  {preview.warnings.map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
+                  <p>
+                    Save or copy text in other LEXIS tabs first. Pending Tutor
+                    requests will be cancelled; restoring conversations does not
+                    renew permission to send private context. This operation
+                    never deletes missing items or creates new learning
+                    evidence.
+                  </p>
+                  <label className={styles.check}>
+                    <input
+                      type="checkbox"
+                      checked={confirmed}
+                      disabled={busy || !!marker}
+                      onChange={(event) => setConfirmed(event.target.checked)}
+                    />
+                    I have saved my work and reviewed this merge.
+                  </label>
+                  <button
+                    className="button primary"
+                    disabled={busy || !!marker || !confirmed || !preview.marker}
+                    onClick={() =>
+                      void perform(async (signal) => {
+                        if (!preview.marker) return;
+                        const result =
+                          await browserProfileRestoreCoordinator().start(
+                            {
+                              marker: preview.marker,
+                              payloads: preview.payloads,
+                            },
+                            { signal, onProgress: progress },
+                          );
+                        setMarker(result);
+                        setStatus(
+                          "All selected data verified. Open the restored profile to continue.",
+                        );
+                      })
+                    }
+                  >
+                    Restore reviewed sections
+                  </button>
+                </div>
+              )}
+            </section>
+          </>
+        )}
         <Link href="/settings" className="text-button">
           Back to settings
         </Link>

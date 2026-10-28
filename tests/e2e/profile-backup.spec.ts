@@ -156,9 +156,11 @@ async function profileCapture(
   return {
     async state(name, detail, target) {
       currentState = name;
-      await expect(
-        page.getByRole("main").getByTestId("profile-export-learning"),
-      ).toBeVisible();
+      await expect(page.getByRole("main")).toBeVisible();
+      if (name === "empty-inventory" || name === "populated-inventory")
+        await expect(page.getByTestId("profile-operation-status")).toHaveText(
+          "Choose what to keep in your copy.",
+        );
       await page.evaluate(async () => {
         await document.fonts.ready;
         await new Promise<void>((done) =>
@@ -610,9 +612,18 @@ async function openRestoredProfile(page: Page) {
     exact: true,
   });
   await expect(open).toBeEnabled();
+  await expect(
+    page.getByRole("region", { name: "Export local profile", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Restore local profile", exact: true }),
+  ).toHaveCount(0);
   // Recovery changes the local generation: a genuine document navigation is
   // required before the previously suspended repositories can be used again.
   await Promise.all([page.waitForEvent("domcontentloaded"), open.click()]);
+  await expect(
+    page.getByRole("main").getByTestId("profile-export-learning"),
+  ).toHaveAccessibleName(/1 meaning.*1 observation/u);
 }
 
 async function readProfile(page: Page) {
@@ -1006,6 +1017,18 @@ test("a storage write failure leaves resumable progress and retry after reload d
       fixture.values["lexis.learning.v1"],
     );
     expect(partial.materials).toBeNull();
+    await expect(
+      restored.getByRole("region", {
+        name: "Export local profile",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await expect(
+      restored.getByRole("region", {
+        name: "Restore local profile",
+        exact: true,
+      }),
+    ).toHaveCount(0);
     await restored.reload();
     await restored
       .getByRole("button", { name: "Resume restoration", exact: true })
