@@ -66,26 +66,27 @@ test("observatory empty state gives no proficiency estimate and filters keep it 
   page,
 }) => {
   await page.goto("/core/observatory");
+  const main = page.getByRole("main");
   await expect(
-    page.getByRole("heading", {
+    main.getByRole("heading", {
       name: "What was actually observed",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
-    page.getByText("No repeated independent difficulty in this window.", {
+    main.getByText("No repeated independent difficulty in this window.", {
       exact: true,
     }),
   ).toBeVisible();
-  await page.getByLabel("Skill", { exact: true }).selectOption("listening");
+  await main.getByLabel("Skill", { exact: true }).selectOption("listening");
   await expect(
-    page.getByText("No observations match these filters.", { exact: true }),
+    main.getByText("No observations match these filters.", { exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Search your evidence").fill("private unknown context");
+  await main.getByLabel("Search your evidence").fill("private unknown context");
   await expect(
-    page.getByText("No observations match these filters.", { exact: true }),
+    main.getByText("No observations match these filters.", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Try a measured task", exact: true }),
+    main.getByRole("link", { name: "Try a measured task", exact: true }),
   ).toBeVisible();
 });
