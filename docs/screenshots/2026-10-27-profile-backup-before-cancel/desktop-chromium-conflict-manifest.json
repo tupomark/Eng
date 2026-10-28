@@ -1,0 +1,41 @@
+{
+  "result": "captured",
+  "generatedAt": "2026-10-27T22:19:07.656Z",
+  "sourceSHA": "f535ec3521fd277eeac12ba887ea9cd50de38293",
+  "builtSourceSHA": "f535ec3521fd277eeac12ba887ea9cd50de38293",
+  "checkoutHead": "f535ec3521fd277eeac12ba887ea9cd50de38293",
+  "hasUncommittedChanges": true,
+  "productionBuildId": "8O2yQfyHllEBXE4pcYHAm",
+  "project": "desktop-chromium",
+  "scenario": "conflict",
+  "test": "a tampered container or a conflicting sense identity cannot overwrite existing profile bytes",
+  "browserEngine": "chromium",
+  "browserVersion": "154.0.8037.57",
+  "screenshots": "Actual viewport captures; CSS animations disabled for a stable still image.",
+  "content": "Fresh isolated browser profiles. Original repository learning, writing and media fixtures; real export/preview/restore UI. The quota-error state is deliberately induced, not a provider outage or production incident.",
+  "limitations": [
+    "Local portable backup is not hosted account persistence, cloud backup or automatic two-device synchronization.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone PWA verification.",
+    "Captures do not prove full accessibility, screen reader/zoom/contrast/performance compliance or final owner visual approval.",
+    "No live AI, dictionary, speech, hosted Auth or external upload is used by these capture journeys."
+  ],
+  "captures": [
+    {
+      "name": "conflicting-preview",
+      "filename": "desktop-chromium-conflicting-preview.png",
+      "detail": "A same-ID definition with different original content blocks restoration. Existing local records, writing branches and recording bytes remain unchanged.",
+      "capturedAt": "2026-10-27T22:19:15.063Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 1440,
+        "height": 1050
+      },
+      "deviceScaleFactor": 1,
+      "scrollY": 2826,
+      "documentWidth": 1440,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": false
+    }
+  ],
+  "pageErrors": []
+}

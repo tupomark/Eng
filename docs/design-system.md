@@ -79,3 +79,9 @@ Core: компактный объект и объяснимая история. 
 Dictionary Full/Deep, import/Inbox, собственный Reader, practice, Writing/Grammar, Listening, Observatory/Network/Goals используют текущие semantic tokens и feature CSS modules. Плотный текст остаётся на спокойной почти непрозрачной поверхности; typed source/assistance/errors раскрываются по месту. Списки/формы используют native labelled controls и общую Modal, без новой конкурирующей drawer-системы. Reduced Motion учитывает system preference и отдельную local настройку.
 
 Эта запись описывает структуру кода, а не завершённый visual/a11y аудит. Новые screenshots из production build, actual composited contrast, 200% zoom/SR, длинные RU/IPA/диалоги, keyboard/safe-area и полный набор empty/error/offline states ещё входят в текущий интеграционный gate. Исторические screenshots22.10 не выдаются за доказательство новых экранов. Physical iPhone/нагрев/audio interruption и финальное визуальное одобрение остаются отдельными gates.
+
+## Profile recovery states — 28 октября
+
+Settings backup использует те же glass-panel, surface-reading, text/line/accent tokens, native labelled checkbox/select/file input и общие buttons. Для выбора разделов — fieldset/legend и label target≥44px, без новой dialog/drawer системы. Состояния preview/conflict, busy/cancel, partial/resume, complete/reopen имеют текстовое объяснение; результат не передаётся одним цветом. При marker export/restore формы убраны до full reopen, чтобы не показывать прежние counts. Новый WebGL/Motion SDK/animated blur не вводился.
+
+[12 actual captures](screenshots/2026-10-28-profile-backup/README.md) из `ccbc688` открыты, текущая мобильная типографика и primary actions просмотрены. Это проверка данного workspace с original fixtures; общая AA/contrast/200%/SR, full locale, hardware performance и финальное owner approval остаются отдельными gates.

@@ -41,19 +41,31 @@ npm run test:e2e
 
 Единого полного профиля backup/restore ещё нет. Используются отдельные возможности:
 
-| Данные                | Доступный путь                            | Что проверить                                                                                                        |
-| --------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Learning v1           | Core export и `/core/restore`             | Preview counts/IDs/context/disputes; confirm merge; повтор без дублей; conflict не меняет данные                     |
-| Tasks/FSRS            | Practice export/restore preview           | Attempts/hints/challenges/rating events/versions, stable replay и exclusion после old backup                         |
-| Materials/Inbox       | Library materials backup/restore          | Chapters/source IDs/anchors/bookmarks/batches/rows; additive merge не затирает current position                      |
-| Writing               | Studio export/restore                     | Original/revisions/branches/parents; конфликтующие revisions сохраняются                                             |
-| Goals                 | Goals backup/restore                      | Stable IDs/revisions, archive, stale proposal protection и counts из реальных events                                 |
-| Saved source passages | Dictionary Full/Deep backup/preview merge | Stable source anchors/IDs and duplicate merge; original learning-v1 excerpt remains separate                         |
-| Imported audio/video  | Сохранить исходные файлы отдельно         | Complete media/profile archive и automated restore пока не реализованы; не обещать их сохранность одной JSON-кнопкой |
+| Данные                | Доступный путь                                | Что проверить                                                                                                                                         |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Learning v1           | Core export и `/core/restore`                 | Preview counts/IDs/context/disputes; confirm merge; повтор без дублей; conflict не меняет данные                                                      |
+| Tasks/FSRS            | Practice export/restore preview               | Attempts/hints/challenges/rating events/versions, stable replay и exclusion после old backup                                                          |
+| Materials/Inbox       | Library materials backup/restore              | Chapters/source IDs/anchors/bookmarks/batches/rows; additive merge не затирает current position                                                       |
+| Writing               | Studio export/restore                         | Original/revisions/branches/parents; конфликтующие revisions сохраняются                                                                              |
+| Goals                 | Goals backup/restore                          | Stable IDs/revisions, archive, stale proposal protection и counts из реальных events                                                                  |
+| Saved source passages | Dictionary Full/Deep backup/preview merge     | Stable source anchors/IDs and duplicate merge; original learning-v1 excerpt remains separate                                                          |
+| Imported audio/video  | Settings → Profile export and restore → media | Bounded `.lexis` содержит original stored bytes/metadata и listening sessions; точный browser gate в PROGRESS. Исходные файлы тоже сохранять отдельно |
 
 Перед существенной migration создать exports всех доступных stores и сохранить исходные books/media. Повреждённые bytes скачать raw; не делать reset или migration поверх них. Restore сначала в отдельном test browser profile/origin: validate → preview → confirmation → counts/values/source links/history reconciliation → reopen → повторный restore. Идентификаторы и disputes сверяются, не только общий счётчик. Fixtures должны быть оригинальными/разрешёнными; private archives не добавляются в Git.
 
 Настоящий hosted backup требует отдельной test destination и restore drill DB/storage/search/projections без production reset. Записать backup age, migration/schema version, owner counts, object references и residual backup retention. До такого drill нельзя называть hosted backup/restore проверенным.
+
+### Локальный recovery drill (.lexis v1)
+
+1. Открыть Settings → Profile export and restore (`/settings/backup`), дождаться inventory. Сохранить/скопировать ввод в других вкладках; для согласованного экспорта остановить playback и дождаться autosave. Выбрать разделы, скачать `.lexis` и сохранить приватно: файл не зашифрован, не загружается в облако и может содержать личные материалы.
+2. В отдельном тестовом browser profile открыть тот же build, выбрать файл. Проверка framing/размеров/каждого SHA-256 не заменяет доверие к автору файла. Credentials/другие account scopes, temporary consent и caches отсутствуют. Unsupported/raw opaque можно сохранить для ручного recovery, но не применять как валидный профиль.
+3. Выбрать разделы и preview. По умолчанию настройки destination сохраняются; перенос настроек включается явно. Same-ID conflicting content блокирует выбранный merge: сохранить обе копии и снять конфликтующий раздел, не делать reset и случайную перенумерацию IDs. Недоступные legacy senses/sources остаются видимыми с исходной историей.
+4. Подтвердить reviewed merge. Preparation сначала проверяет dirty/composing input, затем останавливает ресурсы. Все выбранные payloads сохраняются/проверяются в journal до live writes; normal writers при marker/epoch остановлены. Сверяются exact IDs/counts/значения, Writing branches, media bytes/transcript/позиция, withdrawals/challenges/schedule. Только final readback даёт complete.
+5. Нажать Open restored profile: full navigation нужна для сброса старых paused closures. Повторить preview/restore того же файла, сверить отсутствие новых IDs/дублей. Pending Tutor должен остаться cancelled без consent и автопередачи; восстановление не является новым учебным evidence.
+6. При quota/error/interrupt сохранить файл и открыть recorded restoration. Resume проверяет уже применённые after-state, включая запись без receipt; это не повторное применение и не rollback. Cancel before applying допустим только staged. Если staging вытеснен браузером: staged можно отменить и повторить preview; partial можно явно Keep partial result → Open restored profile → повторно выбрать исходный файл и проверить additive merge. Не обозначать принятый partial как полный restore.
+7. Проверить archive отдельно от explicit purge. Confirmed local deletion удаляет private journal DB/payloads, feature stores и caches, сохраняет неприватный epoch, затем проверяет новый epoch до разблокирования свежего профиля. Экспортированные файлы/другие браузеры/hosted данные удаляются отдельными действиями.
+
+Автоматизированный локальный drill: `npm run build`, затем `npm run test:e2e -- tests/e2e/profile-backup.spec.ts tests/e2e/profile-pause.spec.ts tests/e2e/settings.spec.ts tests/e2e/offline.spec.ts`. Исходные fixtures принадлежат репозиторию; реальные private backups в Git/CI artifacts не добавлять. Limits — верхние границы формата (512 MiB file/128 MiB JSON/25 MiB asset/10 assets), не обещание quota или измеренной iPhone memory capacity. Во время preview/staging совокупные bytes ещё могут быть велики; sequential container reads сами по себе не доказывают hardware performance.
 
 ## Архивирование и удаление
 

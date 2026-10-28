@@ -1,0 +1,41 @@
+{
+  "result": "captured",
+  "generatedAt": "2026-10-28T15:57:11.862Z",
+  "sourceSHA": "7f88866a8a1f27dfc4e55e0da67e4bddf1ff0dec",
+  "builtSourceSHA": "cbe5560382d4eb76b708f788500997c277f8fb98",
+  "checkoutHead": "7f88866a8a1f27dfc4e55e0da67e4bddf1ff0dec",
+  "hasUncommittedChanges": true,
+  "productionBuildId": "SA5gsAIM6Piedwqipqi8p",
+  "project": "iphone-webkit",
+  "scenario": "interrupted",
+  "test": "a storage write failure leaves resumable progress and retry after reload does not duplicate applied learning",
+  "browserEngine": "webkit",
+  "browserVersion": "27.2",
+  "screenshots": "Actual viewport captures; CSS animations disabled for a stable still image.",
+  "content": "Fresh isolated browser profiles. Original repository learning, writing and media fixtures; real export/preview/restore UI. The quota-error state is deliberately induced, not a provider outage or production incident.",
+  "limitations": [
+    "Local portable backup is not hosted account persistence, cloud backup or automatic two-device synchronization.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone PWA verification.",
+    "Captures do not prove full accessibility, screen reader/zoom/contrast/performance compliance or final owner visual approval.",
+    "No live AI, dictionary, speech, hosted Auth or external upload is used by these capture journeys."
+  ],
+  "captures": [
+    {
+      "name": "interrupted-restoration",
+      "filename": "iphone-webkit-interrupted-restoration.png",
+      "detail": "A deliberately induced local materials write failure leaves confirmed earlier steps and an explicit resumable journal; this is an original fixture, not an actual provider incident.",
+      "capturedAt": "2026-10-28T15:57:18.334Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "scrollY": 558,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": true
+    }
+  ],
+  "pageErrors": []
+}

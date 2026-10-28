@@ -4,6 +4,8 @@
 
 Исходники: [tupomark/Eng](https://github.com/tupomark/Eng). Разработка v2 ведётся в `codex/product-completion-v2`. Публикация исходников не означает deployment приложения. Начните со [START_HERE_CODEX.md](START_HERE_CODEX.md), [решений](docs/DECISIONS_AND_SOURCE_OF_TRUTH.md) и [журнала](docs/PROGRESS.md).
 
+Проверенный source+tests `06990ab`: [CI 28 октября](https://github.com/tupomark/Eng/actions/runs/40723399293) —467/467 unit/database и148/148 Chromium/WebKit без retries/flaky/skips, lint/strict TS/build прошли. [Profile recovery gallery](docs/screenshots/2026-10-28-profile-backup/README.md) содержит12 actual captures из compiled `ccbc688`; последующий test-only commit не меняет интерфейс. Полный live/device/release scope этим gate не закрывается.
+
 ## Запуск
 
 Требуется Node.js `>=22.18.0 <27` и npm. Локальные сценарии не требуют внешних ключей.

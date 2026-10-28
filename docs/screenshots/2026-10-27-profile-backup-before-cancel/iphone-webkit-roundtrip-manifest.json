@@ -1,0 +1,57 @@
+{
+  "result": "captured",
+  "generatedAt": "2026-10-27T22:19:50.111Z",
+  "sourceSHA": "f535ec3521fd277eeac12ba887ea9cd50de38293",
+  "builtSourceSHA": "f535ec3521fd277eeac12ba887ea9cd50de38293",
+  "checkoutHead": "f535ec3521fd277eeac12ba887ea9cd50de38293",
+  "hasUncommittedChanges": true,
+  "productionBuildId": "8O2yQfyHllEBXE4pcYHAm",
+  "project": "iphone-webkit",
+  "scenario": "roundtrip",
+  "test": "a whole local profile restores stable histories, draft branches and playable media into a fresh profile without renewing Tutor consent",
+  "browserEngine": "webkit",
+  "browserVersion": "27.2",
+  "screenshots": "Actual viewport captures; CSS animations disabled for a stable still image.",
+  "content": "Fresh isolated browser profiles. Original repository learning, writing and media fixtures; real export/preview/restore UI. The quota-error state is deliberately induced, not a provider outage or production incident.",
+  "limitations": [
+    "Local portable backup is not hosted account persistence, cloud backup or automatic two-device synchronization.",
+    "WebKit iPhone 13 emulation is not physical iPhone Safari or standalone PWA verification.",
+    "Captures do not prove full accessibility, screen reader/zoom/contrast/performance compliance or final owner visual approval.",
+    "No live AI, dictionary, speech, hosted Auth or external upload is used by these capture journeys."
+  ],
+  "captures": [
+    {
+      "name": "valid-preview",
+      "filename": "iphone-webkit-valid-preview.png",
+      "detail": "A real additive preview in a separate browser profile: preserved IDs, branch histories and locally stored media; current device settings are kept.",
+      "capturedAt": "2026-10-27T22:19:56.470Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "scrollY": 3071,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": true
+    },
+    {
+      "name": "completed-restoration",
+      "filename": "iphone-webkit-completed-restoration.png",
+      "detail": "All selected target steps have been applied and read back. Ordinary editing remains paused until explicit full navigation.",
+      "capturedAt": "2026-10-27T22:20:02.622Z",
+      "path": "/settings/backup",
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "deviceScaleFactor": 3,
+      "scrollY": 418,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0,
+      "reducedMotion": true
+    }
+  ],
+  "pageErrors": []
+}
